@@ -1,6 +1,6 @@
 {
   "name": "pdfquery",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "jQuery for PDFs - query document entities with CSS-like selectors",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -13,7 +13,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
