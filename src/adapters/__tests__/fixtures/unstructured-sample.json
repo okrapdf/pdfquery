@@ -1,0 +1,42 @@
+[
+  {
+    "type": "Title",
+    "element_id": "title-1",
+    "text": "Financial Report 2024",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "points": [[100, 50], [500, 50], [500, 100], [100, 100]],
+        "system": { "layout_width": 1000, "layout_height": 1400 }
+      },
+      "detection_class_prob": 0.98
+    }
+  },
+  {
+    "type": "NarrativeText",
+    "element_id": "text-1",
+    "text": "This report summarizes the financial performance.",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "points": [[100, 150], [900, 150], [900, 200], [100, 200]],
+        "system": { "layout_width": 1000, "layout_height": 1400 }
+      },
+      "detection_class_prob": 0.95
+    }
+  },
+  {
+    "type": "Table",
+    "element_id": "table-1",
+    "text": "Revenue $1M\nExpenses $500K",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "points": [[50, 300], [950, 300], [950, 700], [50, 700]],
+        "system": { "layout_width": 1000, "layout_height": 1400 }
+      },
+      "detection_class_prob": 0.92,
+      "text_as_html": "<table><tr><td>Revenue</td><td>$1M</td></tr><tr><td>Expenses</td><td>$500K</td></tr></table>"
+    }
+  }
+]

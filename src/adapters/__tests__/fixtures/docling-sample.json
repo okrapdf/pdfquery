@@ -1,0 +1,60 @@
+{
+  "pages": [
+    { "page_no": 1, "width": 612, "height": 792 }
+  ],
+  "texts": [
+    {
+      "self_ref": "text-1",
+      "label": "section_header",
+      "text": "Executive Summary",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": { "l": 72, "t": 720, "r": 300, "b": 700, "coord_origin": "BOTTOMLEFT" }
+        }
+      ]
+    },
+    {
+      "self_ref": "text-2",
+      "label": "text",
+      "text": "Q4 results exceeded expectations.",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": { "l": 72, "t": 680, "r": 540, "b": 660, "coord_origin": "BOTTOMLEFT" }
+        }
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "self_ref": "table-1",
+      "label": "table",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": { "l": 72, "t": 600, "r": 540, "b": 400, "coord_origin": "BOTTOMLEFT" }
+        }
+      ],
+      "data": {
+        "table_cells": [
+          [{ "text": "Metric" }, { "text": "Value" }],
+          [{ "text": "Revenue" }, { "text": "$10M" }]
+        ]
+      }
+    }
+  ],
+  "figures": [
+    {
+      "self_ref": "fig-1",
+      "label": "figure",
+      "caption": "Revenue Growth Chart",
+      "prov": [
+        {
+          "page_no": 1,
+          "bbox": { "l": 72, "t": 350, "r": 540, "b": 150, "coord_origin": "BOTTOMLEFT" }
+        }
+      ]
+    }
+  ]
+}
