@@ -1,0 +1,43 @@
+{
+  "name": "pdfquery",
+  "version": "0.1.1",
+  "description": "jQuery for PDFs - query document entities with CSS-like selectors",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "pdf",
+    "query",
+    "jquery",
+    "document",
+    "ocr",
+    "extraction",
+    "dom",
+    "selector"
+  ],
+  "author": "okrapdf",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/okrapdf/pdfquery"
+  },
+  "homepage": "https://github.com/okrapdf/pdfquery#readme",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
