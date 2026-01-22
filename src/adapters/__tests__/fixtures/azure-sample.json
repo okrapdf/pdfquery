@@ -1,0 +1,67 @@
+{
+  "content": "Invoice\nItem  Price\nWidget  $25.00",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "width": 8.5,
+      "height": 11,
+      "unit": "inch",
+      "lines": [
+        {
+          "content": "Invoice",
+          "polygon": [
+            { "x": 0.85, "y": 1.1 },
+            { "x": 1.7, "y": 1.1 },
+            { "x": 1.7, "y": 1.43 },
+            { "x": 0.85, "y": 1.43 }
+          ]
+        }
+      ],
+      "words": [
+        {
+          "content": "Widget",
+          "polygon": [
+            { "x": 0.85, "y": 2.2 },
+            { "x": 1.7, "y": 2.2 },
+            { "x": 1.7, "y": 2.53 },
+            { "x": 0.85, "y": 2.53 }
+          ],
+          "confidence": 0.95
+        },
+        {
+          "content": "$25.00",
+          "polygon": [
+            { "x": 4.25, "y": 2.2 },
+            { "x": 5.1, "y": 2.2 },
+            { "x": 5.1, "y": 2.53 },
+            { "x": 4.25, "y": 2.53 }
+          ],
+          "confidence": 0.98
+        }
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "rowCount": 2,
+      "columnCount": 2,
+      "boundingRegions": [
+        {
+          "pageNumber": 1,
+          "polygon": [
+            { "x": 0.5, "y": 3.0 },
+            { "x": 8.0, "y": 3.0 },
+            { "x": 8.0, "y": 6.0 },
+            { "x": 0.5, "y": 6.0 }
+          ]
+        }
+      ],
+      "cells": [
+        { "rowIndex": 0, "columnIndex": 0, "content": "Item" },
+        { "rowIndex": 0, "columnIndex": 1, "content": "Price" },
+        { "rowIndex": 1, "columnIndex": 0, "content": "Widget" },
+        { "rowIndex": 1, "columnIndex": 1, "content": "$25.00" }
+      ]
+    }
+  ]
+}

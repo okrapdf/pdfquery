@@ -1,0 +1,58 @@
+{
+  "text": "Invoice #12345\nTotal: $500.00\nDate: 2024-01-15",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "lines": [
+        {
+          "layout": {
+            "textAnchor": {
+              "textSegments": [{ "startIndex": "0", "endIndex": "14" }]
+            },
+            "boundingPoly": {
+              "normalizedVertices": [
+                { "x": 0.1, "y": 0.1 },
+                { "x": 0.4, "y": 0.1 },
+                { "x": 0.4, "y": 0.13 },
+                { "x": 0.1, "y": 0.13 }
+              ]
+            },
+            "confidence": 0.98
+          }
+        },
+        {
+          "layout": {
+            "textAnchor": {
+              "textSegments": [{ "startIndex": "15", "endIndex": "29" }]
+            },
+            "boundingPoly": {
+              "normalizedVertices": [
+                { "x": 0.1, "y": 0.2 },
+                { "x": 0.35, "y": 0.2 },
+                { "x": 0.35, "y": 0.23 },
+                { "x": 0.1, "y": 0.23 }
+              ]
+            },
+            "confidence": 0.95
+          }
+        }
+      ],
+      "tables": [
+        {
+          "layout": {
+            "boundingPoly": {
+              "normalizedVertices": [
+                { "x": 0.05, "y": 0.4 },
+                { "x": 0.95, "y": 0.4 },
+                { "x": 0.95, "y": 0.8 },
+                { "x": 0.05, "y": 0.8 }
+              ]
+            },
+            "confidence": 0.92
+          },
+          "bodyRows": []
+        }
+      ]
+    }
+  ]
+}

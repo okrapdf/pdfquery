@@ -96,3 +96,6 @@ export {
   getFixture,
 } from './fixtures';
 export type { FixtureData, FixtureName } from './fixtures';
+
+// Vendor adapters (normalize OCR vendor output → compiler input)
+export * from './adapters';

@@ -1,0 +1,69 @@
+{
+  "DocumentMetadata": { "Pages": 2 },
+  "Blocks": [
+    {
+      "Id": "page-1",
+      "BlockType": "PAGE",
+      "Page": 1
+    },
+    {
+      "Id": "line-1",
+      "BlockType": "LINE",
+      "Text": "Total Revenue",
+      "Confidence": 99.5,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.1,
+          "Top": 0.2,
+          "Width": 0.25,
+          "Height": 0.03
+        }
+      },
+      "Page": 1
+    },
+    {
+      "Id": "word-1",
+      "BlockType": "WORD",
+      "Text": "$12,500,000",
+      "Confidence": 98.2,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.5,
+          "Top": 0.2,
+          "Width": 0.15,
+          "Height": 0.03
+        }
+      },
+      "Page": 1
+    },
+    {
+      "Id": "table-1",
+      "BlockType": "TABLE",
+      "Confidence": 95.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.05,
+          "Top": 0.3,
+          "Width": 0.9,
+          "Height": 0.4
+        }
+      },
+      "Page": 1
+    },
+    {
+      "Id": "line-2",
+      "BlockType": "LINE",
+      "Text": "Page 2 Header",
+      "Confidence": 97.0,
+      "Geometry": {
+        "BoundingBox": {
+          "Left": 0.1,
+          "Top": 0.05,
+          "Width": 0.3,
+          "Height": 0.025
+        }
+      },
+      "Page": 2
+    }
+  ]
+}

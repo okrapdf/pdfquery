@@ -10,13 +10,14 @@ npm install pdfquery
 
 ## What This Is (and Isn't)
 
-**pdfquery does NOT parse PDFs.** It takes the **output** of any OCR/VLM service and makes it queryable:
+**pdfquery does NOT parse PDFs.** It takes the **output** of any document processing service and makes it queryable:
 
 ```
-PDF → [OCR Service] → bboxes + text → pdfquery → queryable DOM
-         ↑
-   Unstructured, Docling, LlamaParse,
-   Google DocAI, Azure, Textract, etc.
+PDF → [Document Processor] → bboxes + text + metadata → pdfquery → queryable DOM
+              ↑
+      (partitioner, parser, processor, analyzer)
+      Unstructured, Docling, LlamaParse,
+      Google DocAI, Azure, Textract, etc.
 ```
 
 Think of pdfquery as a **conceptual port of jQuery**. Same syntax patterns, completely different data structure.
@@ -44,16 +45,16 @@ Think of pdfquery as a **conceptual port of jQuery**. Same syntax patterns, comp
 ### Where pdfquery Sits in the Pipeline
 
 ```
-┌─────────────┐     ┌──────────────────┐     ┌───────────┐
-│   PDF/IMG   │ ──▶ │  Document AI     │ ──▶ │ pdfquery  │
-│  (raw file) │     │  (the "brain")   │     │ (query)   │
-└─────────────┘     └──────────────────┘     └───────────┘
-                            │
-              Outputs "coordinate soup":
-              bboxes + text + confidence
+┌─────────────┐     ┌──────────────────────┐     ┌───────────┐
+│   PDF/IMG   │ ──▶ │  Document Processor  │ ──▶ │ pdfquery  │
+│  (raw file) │     │  (layout + extract)  │     │ (query)   │
+└─────────────┘     └──────────────────────┘     └───────────┘
+                              │
+                Outputs structured elements:
+                bboxes + text + confidence
 ```
 
-pdfquery consumes the **output** of document AI services. You need one of these first:
+pdfquery consumes the **output** of document processing services. You need one of these first:
 
 | Service | Class/Method | Bbox Field | Normalization |
 |---------|--------------|------------|---------------|
