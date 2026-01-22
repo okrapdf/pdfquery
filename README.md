@@ -15,9 +15,55 @@ npm install pdfquery
 ```
 PDF → [OCR Service] → bboxes + text → pdfquery → queryable DOM
          ↑
-   Google DocAI, Azure Form Recognizer,
-   AWS Textract, LlamaParse, Tesseract, etc.
+   Unstructured, Docling, LlamaParse,
+   Google DocAI, Azure, Textract, etc.
 ```
+
+Think of pdfquery as a **conceptual port of jQuery**. Same syntax patterns, completely different data structure.
+
+### How Close to jQuery?
+
+| Feature | jQuery | pdfquery |
+|---------|--------|----------|
+| **The "$"** | `$('.class')` selects HTML elements | `$$('.table')` selects OCR-detected entities |
+| **Traversal** | Browser DOM (tags, IDs, classes) | Virtual Doc (tables, figures, fields) |
+| **Purpose** | DOM manipulation (hide, show, append) | **Data extraction** (sum, avg, count) |
+| **Selectors** | CSS levels 1-3 | CSS-like + data filters like `[confidence>0.9]` |
+
+**Key difference:** jQuery changes how a webpage *looks*. pdfquery extracts information from documents already processed by AI.
+
+### Syntax Mapping from jQuery
+
+| jQuery | pdfquery | Notes |
+|--------|----------|-------|
+| `.val()` | `.text()` / `.values()` | `.values()` strips currency symbols → numbers |
+| `.each(fn)` | `.texts()` | Returns array directly |
+| `.find()` | `.filter()` | Same concept |
+| — | `.sum()`, `.avg()`, `.stats()` | Aggregation methods jQuery doesn't have |
+
+### Where pdfquery Sits in the Pipeline
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌───────────┐
+│   PDF/IMG   │ ──▶ │  Document AI     │ ──▶ │ pdfquery  │
+│  (raw file) │     │  (the "brain")   │     │ (query)   │
+└─────────────┘     └──────────────────┘     └───────────┘
+                            │
+              Outputs "coordinate soup":
+              bboxes + text + confidence
+```
+
+pdfquery consumes the **output** of document AI services. You need one of these first:
+
+| Service | What It Outputs | pdfquery Compatibility |
+|---------|-----------------|------------------------|
+| **Unstructured.io** | HTML elements with coordinates | ✅ Normalize to bbox format |
+| **Docling** | DoclingDocument with cells/tables | ✅ Normalize to bbox format |
+| **LlamaParse** | Markdown + optional bboxes | ✅ Use `addMarkdownBlocks()` |
+| **Google DocAI** | Blocks with boundingPoly | ✅ Normalize vertices to 0-1 |
+| **Azure Form Recognizer** | Fields with boundingBox | ✅ Normalize to 0-1 |
+| **AWS Textract** | Blocks with Geometry | ✅ Already normalized 0-1 |
+| **Tesseract** | Words with bbox (pixels) | ✅ Divide by page dimensions |
 
 ### Input Format
 
