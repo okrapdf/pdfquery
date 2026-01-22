@@ -86,3 +86,13 @@ export type {
 // Tree adapter (Inspector tree → VirtualDoc)
 export { treeToVirtualDoc, getPageCount } from './tree-adapter';
 export type { InspectorTreeNode, TreeAdapterOptions } from './tree-adapter';
+
+// Sample fixtures (zero-dependency demos)
+export {
+  fixtures,
+  loadFixture,
+  compileFixture,
+  listFixtures,
+  getFixture,
+} from './fixtures';
+export type { FixtureData, FixtureName } from './fixtures';

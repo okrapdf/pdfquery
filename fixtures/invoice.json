@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "documentId": "sample-invoice",
+    "fileName": "INV-2025-0042.pdf",
+    "totalPages": 1,
+    "documentType": "invoice"
+  },
+  "entities": [
+    {
+      "id": "table-1-0",
+      "type": "table",
+      "title": "Line Items",
+      "page": 1,
+      "bbox": { "x": 0.05, "y": 0.35, "width": 0.9, "height": 0.35 },
+      "schema": ["Item", "Description", "Qty", "Unit Price", "Amount"],
+      "isComplete": true,
+      "confidence": 0.96
+    }
+  ],
+  "tables": [
+    {
+      "id": "table-1-0",
+      "page_number": 1,
+      "markdown": "| Item | Description | Qty | Unit Price | Amount |\n|---|---|---|---|---|\n| PDF-001 | Document Processing API - Standard | 1,000 | $0.05 | $50.00 |\n| PDF-002 | Table Extraction Add-on | 500 | $0.08 | $40.00 |\n| PDF-003 | Priority Support (Monthly) | 1 | $99.00 | $99.00 |\n| | | | Subtotal | $189.00 |\n| | | | Tax (8.5%) | $16.07 |\n| | | | **Total** | **$205.07** |",
+      "bbox": { "xmin": 0.05, "ymin": 0.35, "xmax": 0.95, "ymax": 0.7 },
+      "confidence": 0.96,
+      "verification_status": "pending",
+      "verified_by": null,
+      "verified_at": null
+    }
+  ],
+  "fieldEntities": [
+    {
+      "id": "field-invoice-number",
+      "page_number": 1,
+      "field_label": "Invoice Number",
+      "suggested_value": "INV-2025-0042",
+      "confidence": 0.99,
+      "bounding_box": { "x": 0.7, "y": 0.1, "width": 0.2, "height": 0.03 },
+      "verification_status": "pending"
+    },
+    {
+      "id": "field-invoice-date",
+      "page_number": 1,
+      "field_label": "Invoice Date",
+      "suggested_value": "2025-01-15",
+      "confidence": 0.98,
+      "bounding_box": { "x": 0.7, "y": 0.14, "width": 0.2, "height": 0.03 },
+      "verification_status": "pending"
+    },
+    {
+      "id": "field-due-date",
+      "page_number": 1,
+      "field_label": "Due Date",
+      "suggested_value": "2025-02-14",
+      "confidence": 0.97,
+      "bounding_box": { "x": 0.7, "y": 0.18, "width": 0.2, "height": 0.03 },
+      "verification_status": "pending"
+    },
+    {
+      "id": "field-subtotal",
+      "page_number": 1,
+      "field_label": "Subtotal",
+      "suggested_value": "$189.00",
+      "suggested_value_numeric": 189.00,
+      "confidence": 0.96,
+      "bounding_box": { "x": 0.75, "y": 0.6, "width": 0.15, "height": 0.03 },
+      "verification_status": "pending"
+    },
+    {
+      "id": "field-tax",
+      "page_number": 1,
+      "field_label": "Tax",
+      "suggested_value": "$16.07",
+      "suggested_value_numeric": 16.07,
+      "confidence": 0.95,
+      "bounding_box": { "x": 0.75, "y": 0.64, "width": 0.15, "height": 0.03 },
+      "verification_status": "pending"
+    },
+    {
+      "id": "field-total",
+      "page_number": 1,
+      "field_label": "Total",
+      "suggested_value": "$205.07",
+      "suggested_value_numeric": 205.07,
+      "confidence": 0.98,
+      "bounding_box": { "x": 0.75, "y": 0.68, "width": 0.15, "height": 0.03 },
+      "verification_status": "pending"
+    }
+  ],
+  "pages": [
+    {
+      "page": 1,
+      "blocks": [
+        { "text": "INVOICE", "bbox": { "x": 0.4, "y": 0.05, "width": 0.2, "height": 0.05 }, "confidence": 0.99 },
+        { "text": "OkraPDF Inc.", "bbox": { "x": 0.05, "y": 0.1, "width": 0.25, "height": 0.03 }, "confidence": 0.98 },
+        { "text": "123 AI Street, San Francisco, CA 94105", "bbox": { "x": 0.05, "y": 0.13, "width": 0.35, "height": 0.025 }, "confidence": 0.97 },
+        { "text": "Bill To:", "bbox": { "x": 0.05, "y": 0.22, "width": 0.1, "height": 0.025 }, "confidence": 0.98 },
+        { "text": "Acme Corporation", "bbox": { "x": 0.05, "y": 0.25, "width": 0.2, "height": 0.025 }, "confidence": 0.97 },
+        { "text": "456 Business Ave, New York, NY 10001", "bbox": { "x": 0.05, "y": 0.28, "width": 0.35, "height": 0.025 }, "confidence": 0.96 },
+        { "text": "Invoice Number: INV-2025-0042", "bbox": { "x": 0.65, "y": 0.1, "width": 0.3, "height": 0.025 }, "confidence": 0.99 },
+        { "text": "Date: January 15, 2025", "bbox": { "x": 0.65, "y": 0.13, "width": 0.25, "height": 0.025 }, "confidence": 0.98 },
+        { "text": "Due Date: February 14, 2025", "bbox": { "x": 0.65, "y": 0.16, "width": 0.28, "height": 0.025 }, "confidence": 0.97 }
+      ],
+      "content": "# INVOICE\n\n**OkraPDF Inc.**\n123 AI Street, San Francisco, CA 94105\n\n**Bill To:**\nAcme Corporation\n456 Business Ave, New York, NY 10001\n\nInvoice Number: INV-2025-0042\nDate: January 15, 2025\nDue Date: February 14, 2025"
+    }
+  ]
+}

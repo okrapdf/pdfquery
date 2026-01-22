@@ -2,6 +2,8 @@
 
 jQuery for PDFs. Query extracted document entities with CSS-like selectors.
 
+[**Live Demo / Inspector**](https://okrapdf.com/demo/inspector)
+
 ```bash
 npm install pdfquery
 ```
