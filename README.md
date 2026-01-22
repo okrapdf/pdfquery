@@ -55,15 +55,42 @@ Think of pdfquery as a **conceptual port of jQuery**. Same syntax patterns, comp
 
 pdfquery consumes the **output** of document AI services. You need one of these first:
 
-| Service | What It Outputs | pdfquery Compatibility |
-|---------|-----------------|------------------------|
-| **Unstructured.io** | HTML elements with coordinates | ✅ Normalize to bbox format |
-| **Docling** | DoclingDocument with cells/tables | ✅ Normalize to bbox format |
-| **LlamaParse** | Markdown + optional bboxes | ✅ Use `addMarkdownBlocks()` |
-| **Google DocAI** | Blocks with boundingPoly | ✅ Normalize vertices to 0-1 |
-| **Azure Form Recognizer** | Fields with boundingBox | ✅ Normalize to 0-1 |
-| **AWS Textract** | Blocks with Geometry | ✅ Already normalized 0-1 |
-| **Tesseract** | Words with bbox (pixels) | ✅ Divide by page dimensions |
+| Service | Class/Method | Bbox Field | Normalization |
+|---------|--------------|------------|---------------|
+| **Unstructured** | `partition()` → `Element.metadata.coordinates` | `CoordinatesMetadata.points` (tuple of x,y) | Divide by `system.layout_width/height` |
+| **Docling** | `DoclingDocument` → `item.prov[].bbox` | `BoundingBox(l, t, r, b, coord_origin)` | Already normalized or use `coord_origin` |
+| **Google DocAI** | `Document.pages[].blocks[]` | `boundingPoly.normalizedVertices[].x/y` | Already 0-1 normalized |
+| **Azure DocIntel** | `AnalyzeResult.documents[].fields[]` | `BoundingRegion.polygon` (list of Points) | Divide by page `width/height` |
+| **AWS Textract** | `AnalyzeDocumentResponse.Blocks[]` | `Geometry.BoundingBox.Left/Top/Width/Height` | Already 0-1 normalized |
+| **Tesseract** | `pytesseract.image_to_data()` | `left, top, width, height` (pixels) | Divide by image dimensions |
+
+### Example: Normalizing Vendor Output
+
+```typescript
+// AWS Textract (already normalized 0-1)
+const textractBlock = { Geometry: { BoundingBox: { Left: 0.1, Top: 0.2, Width: 0.3, Height: 0.05 }}};
+const bbox = {
+  x: textractBlock.Geometry.BoundingBox.Left,       // 0.1
+  y: textractBlock.Geometry.BoundingBox.Top,        // 0.2  
+  width: textractBlock.Geometry.BoundingBox.Width,  // 0.3
+  height: textractBlock.Geometry.BoundingBox.Height // 0.05
+};
+
+// Tesseract (pixels → normalize by dividing by image size)
+const tesseractWord = { left: 100, top: 200, width: 150, height: 30 };
+const imageSize = { width: 1000, height: 1400 };
+const bbox = {
+  x: tesseractWord.left / imageSize.width,      // 0.1
+  y: tesseractWord.top / imageSize.height,      // 0.143
+  width: tesseractWord.width / imageSize.width, // 0.15
+  height: tesseractWord.height / imageSize.height // 0.021
+};
+
+// Google DocAI (normalizedVertices already 0-1)
+const docaiBlock = { boundingPoly: { normalizedVertices: [{x:0.1,y:0.2}, {x:0.4,y:0.2}, {x:0.4,y:0.25}, {x:0.1,y:0.25}]}};
+const v = docaiBlock.boundingPoly.normalizedVertices;
+const bbox = { x: v[0].x, y: v[0].y, width: v[1].x - v[0].x, height: v[2].y - v[0].y };
+```
 
 ### Input Format
 
