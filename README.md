@@ -1,4 +1,4 @@
-# pdfQuery
+# pdfquery
 
 jQuery for PDFs. Query extracted document entities with CSS-like selectors.
 
@@ -8,43 +8,82 @@ jQuery for PDFs. Query extracted document entities with CSS-like selectors.
 npm install pdfquery
 ```
 
-## Usage
+## What This Is (and Isn't)
+
+**pdfquery does NOT parse PDFs.** It takes the **output** of any OCR/VLM service and makes it queryable:
+
+```
+PDF → [OCR Service] → bboxes + text → pdfquery → queryable DOM
+         ↑
+   Google DocAI, Azure Form Recognizer,
+   AWS Textract, LlamaParse, Tesseract, etc.
+```
+
+### Input Format
+
+pdfquery accepts JSON with:
+- **Bounding boxes**: Normalized 0-1 coordinates (`{x, y, width, height}` or `{xmin, ymin, xmax, ymax}`)
+- **Text content**: The extracted text
+- **Entity metadata**: Type, confidence score, verification status
 
 ```typescript
-import { createQueryEngine, DocCompiler } from 'pdfquery';
+// Example: what OCR services output → what pdfquery consumes
+{
+  tables: [{
+    id: "table-1",
+    page_number: 1,
+    markdown: "| Revenue | $12.5B |\n|---|---|",
+    bbox: { xmin: 0.05, ymin: 0.15, xmax: 0.95, ymax: 0.5 },  // normalized 0-1
+    confidence: 0.98
+  }],
+  entities: [{
+    id: "field-total",
+    page_number: 1,
+    field_label: "Total",
+    suggested_value: "$205.07",
+    bounding_box: { x: 0.75, y: 0.68, width: 0.15, height: 0.03 },
+    confidence: 0.98
+  }]
+}
+```
 
-// Compile document from extracted entities
-const compiler = new DocCompiler({ documentId: 'doc_123' });
-compiler.addTables(tablesFromApi);
-compiler.addEntities(entitiesFromApi);
-const doc = compiler.compile();
+## Quick Start (No API Key Needed)
 
-// Query like jQuery
+```typescript
+import { loadFixture, createQueryEngine } from 'pdfquery';
+
+// Load sample data (financial report or invoice)
+const doc = loadFixture('financial-report');
 const $$ = createQueryEngine(doc);
 
-// Select by type
-$$('.table')              // All tables
-$$('.currency')           // All currency values
-$$('.figure')             // All figures
+// Query like jQuery
+$$('.table').count();           // 4 tables
+$$('.currency').sum();          // aggregate values
+$$('[confidence>0.9]').texts(); // high-confidence extractions
+```
 
-// Filter by attributes
-$$('[confidence>0.9]')    // High confidence entities
-$$('[verified=true]')     // Verified entities
-$$('.table[confidence>0.8]') // High confidence tables
+Available fixtures: `'financial-report'`, `'invoice'`
 
-// Chain operations
-$$('.currency')
-  .onPage(2)
-  .filter('[confidence>0.9]')
-  .sum();
+## Usage with Your Own Data
 
-// Get statistics
+```typescript
+import { DocCompiler, createQueryEngine } from 'pdfquery';
+
+// Your OCR output (from any service)
+const ocrOutput = {
+  tables: [{ id: 't1', page_number: 1, markdown: '...', bbox: {...}, confidence: 0.95 }],
+  entities: [{ id: 'e1', page_number: 1, suggested_value: '$100', bounding_box: {...} }]
+};
+
+// Compile into queryable DOM
+const compiler = new DocCompiler({ documentId: 'my-doc' });
+compiler.addTables(ocrOutput.tables);
+compiler.addEntities(ocrOutput.entities);
+const doc = compiler.compile();
+
+// Query
+const $$ = createQueryEngine(doc);
 $$('.table').stats();
-// { total: 5, verified: 3, flagged: 1, pending: 1, avgConfidence: 0.92 }
-
-// Mutations (jQuery-style .attr())
-$$('.table[confidence>0.9]').attr('verified', true);
-$$('[confidence<0.7]').attr({ flagReason: 'low confidence' });
 ```
 
 ## Selectors
@@ -103,23 +142,36 @@ $$('[confidence<0.7]').attr({ flagReason: 'low confidence' });
 - `.htmlDocument()` - Full HTML document
 - `.json()` - JSON string
 
-## Document Compilation
+## Bringing Your Own OCR
+
+pdfquery is **OCR-agnostic**. Normalize your OCR output to this shape:
 
 ```typescript
-import { DocCompiler, fromEntitiesApi } from 'pdfquery';
+interface SourceTable {
+  id: string;
+  page_number: number;
+  markdown: string;                           // table content
+  bbox: { xmin, ymin, xmax, ymax: number };   // normalized 0-1
+  confidence?: number;
+}
 
-// From API response
-const entities = fromEntitiesApi(apiResponse);
-const compiler = new DocCompiler({ documentId: 'my-doc' });
-compiler.addExtractedEntities(entities);
+interface SourceEntity {
+  id: string;
+  page_number: number;
+  field_label?: string;
+  suggested_value: string;
+  suggested_value_numeric?: number;
+  bounding_box: { x, y, width, height: number };  // normalized 0-1
+  confidence: number;
+}
+```
+
+Then compile:
+```typescript
+const compiler = new DocCompiler({ documentId: 'doc' });
+compiler.addTables(yourTables);
+compiler.addEntities(yourEntities);
 const doc = compiler.compile();
-
-// From multiple sources
-compiler
-  .addTables(tables)
-  .addEntities(entities)
-  .addOcrBlocks(ocrBlocks)
-  .addMarkdownBlocks(markdownBlocks);
 ```
 
 ## License
