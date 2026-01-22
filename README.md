@@ -142,37 +142,49 @@ $$('.table').stats();
 - `.htmlDocument()` - Full HTML document
 - `.json()` - JSON string
 
-## Bringing Your Own OCR
+## Multi-Layer Builder Pattern
 
-pdfquery is **OCR-agnostic**. Normalize your OCR output to this shape:
+pdfquery merges **multiple extraction layers** into one queryable DOM. Each layer can come from a different OCR/VLM service:
 
-```typescript
-interface SourceTable {
-  id: string;
-  page_number: number;
-  markdown: string;                           // table content
-  bbox: { xmin, ymin, xmax, ymax: number };   // normalized 0-1
-  confidence?: number;
-}
-
-interface SourceEntity {
-  id: string;
-  page_number: number;
-  field_label?: string;
-  suggested_value: string;
-  suggested_value_numeric?: number;
-  bounding_box: { x, y, width, height: number };  // normalized 0-1
-  confidence: number;
-}
-```
-
-Then compile:
 ```typescript
 const compiler = new DocCompiler({ documentId: 'doc' });
-compiler.addTables(yourTables);
-compiler.addEntities(yourEntities);
+
+// Layer 1: Raw OCR blocks (word/line level from Tesseract, Google DocAI)
+compiler.addOcrBlocks([
+  { id: 'ocr-1', page: 1, text: 'Revenue', bbox: { x: 0.1, y: 0.2, width: 0.15, height: 0.03 }, confidence: 0.99 },
+  { id: 'ocr-2', page: 1, text: '$12.5B', bbox: { x: 0.3, y: 0.2, width: 0.1, height: 0.03 }, confidence: 0.97 },
+]);
+
+// Layer 2: Tables (from table extraction model)
+compiler.addTables([
+  { id: 't1', page_number: 1, markdown: '| Revenue | $12.5B |', bbox: { xmin: 0.05, ymin: 0.15, xmax: 0.95, ymax: 0.5 }, confidence: 0.95 }
+]);
+
+// Layer 3: Semantic entities (figures, footnotes from VLM)
+compiler.addExtractedEntities([
+  { id: 'fig-1', type: 'figure', title: 'Revenue Chart', page: 1, bbox: { x: 0.1, y: 0.6, width: 0.8, height: 0.3 }, confidence: 0.92 }
+]);
+
+// Compile all layers → one DOM
 const doc = compiler.compile();
+const $$ = createQueryEngine(doc);
+
+// Query across all layers
+$$('.table').count();        // tables
+$$('span.ocr-block').count(); // raw OCR
+$$('.figure').count();       // figures
+$$('*').onPage(1).count();   // everything on page 1
 ```
+
+| Method | Layer Type | Granularity |
+|--------|-----------|-------------|
+| `addOcrBlocks()` | Raw OCR | Word/line bboxes |
+| `addTables()` | Tables | Table bbox + markdown |
+| `addEntities()` | Fields | Key-value pairs |
+| `addExtractedEntities()` | Semantic | Figures, footnotes, summaries |
+| `addMarkdownBlocks()` | VLM output | Full-page markdown |
+
+This is the "hydration" model — each layer enriches the same coordinate system.
 
 ## License
 
