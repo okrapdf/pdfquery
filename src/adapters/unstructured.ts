@@ -10,11 +10,10 @@ import type { NormalizedBlock, NormalizedTable, AdapterResult } from './types';
  */
 
 export interface UnstructuredCoordinates {
-  points: [number, number][];  // [[x1,y1], [x2,y2], [x3,y3], [x4,y4]]
-  system: {
-    layout_width: number;
-    layout_height: number;
-  };
+  points: [number, number][];
+  system: string;
+  layout_width: number;
+  layout_height: number;
 }
 
 export interface UnstructuredMetadata {
@@ -43,7 +42,7 @@ function pointsToBbox(coords: UnstructuredCoordinates) {
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
   
-  const { layout_width, layout_height } = coords.system;
+  const { layout_width, layout_height } = coords;
   
   return {
     x: minX / layout_width,

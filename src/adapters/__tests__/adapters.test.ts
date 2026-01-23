@@ -11,6 +11,7 @@ import docaiSample from './fixtures/docai-sample.json';
 import azureSample from './fixtures/azure-sample.json';
 import tesseractSample from './fixtures/tesseract-sample.json';
 import unstructuredSample from './fixtures/unstructured-sample.json';
+import unstructuredRealOutput from './fixtures/unstructured-real-output.json';
 import doclingSample from './fixtures/docling-sample.json';
 
 function assertNormalized(val: number, name: string) {
@@ -143,6 +144,22 @@ describe('fromUnstructured', () => {
     const table = result.tables[0];
     expect(table.markdown).toContain('Revenue');
     expect(table.markdown).toContain('$1M');
+  });
+
+  it('parses real SDK output (layout-parser-paper-fast.pdf)', () => {
+    const result = fromUnstructured(unstructuredRealOutput as unknown as UnstructuredElement[]);
+    
+    expect(result.pageCount).toBe(2);
+    expect(result.blocks.length).toBe(25);
+    expect(result.tables.length).toBe(0);
+    
+    for (const block of result.blocks) {
+      assertBboxNormalized(block.bbox);
+    }
+
+    const title = result.blocks.find(b => b.text.includes('LayoutParser'));
+    expect(title).toBeDefined();
+    expect(title!.text).toContain('Deep Learning');
   });
 });
 

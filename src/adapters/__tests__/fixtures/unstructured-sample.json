@@ -7,7 +7,9 @@
       "page_number": 1,
       "coordinates": {
         "points": [[100, 50], [500, 50], [500, 100], [100, 100]],
-        "system": { "layout_width": 1000, "layout_height": 1400 }
+        "system": "PixelSpace",
+        "layout_width": 1000,
+        "layout_height": 1400
       },
       "detection_class_prob": 0.98
     }
@@ -20,7 +22,9 @@
       "page_number": 1,
       "coordinates": {
         "points": [[100, 150], [900, 150], [900, 200], [100, 200]],
-        "system": { "layout_width": 1000, "layout_height": 1400 }
+        "system": "PixelSpace",
+        "layout_width": 1000,
+        "layout_height": 1400
       },
       "detection_class_prob": 0.95
     }
@@ -33,7 +37,9 @@
       "page_number": 1,
       "coordinates": {
         "points": [[50, 300], [950, 300], [950, 700], [50, 700]],
-        "system": { "layout_width": 1000, "layout_height": 1400 }
+        "system": "PixelSpace",
+        "layout_width": 1000,
+        "layout_height": 1400
       },
       "detection_class_prob": 0.92,
       "text_as_html": "<table><tr><td>Revenue</td><td>$1M</td></tr><tr><td>Expenses</td><td>$500K</td></tr></table>"
