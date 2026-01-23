@@ -1,0 +1,61 @@
+{
+  "id": "financebench-amazon-2019",
+  "slug": "amazon-2019-10k",
+  "fileName": "AMAZON_2019_10K.pdf",
+  "title": "Amazon.com Inc. Form 10-K 2019",
+  "description": "Annual report for Amazon.com Inc. for fiscal year ending December 31, 2019. Part of FinanceBench evaluation dataset.",
+  "totalPages": 84,
+  "demoPages": 5,
+  "pdfUrl": "https://raw.githubusercontent.com/patronus-ai/financebench/main/pdfs/AMAZON_2019_10K.pdf",
+  "thumbnailUrl": null,
+  "pages": [
+    {
+      "pageNumber": 1,
+      "content": "UNITED STATES\nSECURITIES AND EXCHANGE COMMISSION\nWashington, D.C. 20549\n\nFORM 10-K\n\nANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d)\nOF THE SECURITIES EXCHANGE ACT OF 1934\n\nFor the fiscal year ended December 31, 2019\n\nCommission File No. 000-22513\n\nAMAZON.COM, INC.\n(Exact name of registrant as specified in its charter)\n\nDelaware\n(State or other jurisdiction of incorporation or organization)\n\n91-1646860\n(I.R.S. Employer Identification No.)\n\n410 Terry Avenue North, Seattle, Washington 98109-5210\n(Address of principal executive offices, including zip code)\n\n(206) 266-1000\n(Registrant's telephone number, including area code)"
+    },
+    {
+      "pageNumber": 37,
+      "content": "AMAZON.COM, INC.\nCONSOLIDATED STATEMENTS OF OPERATIONS\n(in millions, except per share data)\n\n| | Year Ended December 31, |\n|---|2017|2018|2019|\n| Net product sales | $118,573 | $141,915 | $160,408 |\n| Net service sales | 59,293 | 90,972 | 120,114 |\n| Total net sales | 177,866 | 232,887 | 280,522 |\n| Operating expenses: | | | |\n| Cost of sales | 111,934 | 139,156 | 165,536 |\n| Fulfillment | 25,249 | 34,027 | 40,232 |\n| Technology and content | 22,620 | 28,837 | 35,931 |\n| Marketing | 10,069 | 13,814 | 18,878 |\n| General and administrative | 3,674 | 4,336 | 5,203 |\n| Other operating expense, net | 214 | 296 | 201 |\n| Total operating expenses | 173,760 | 220,466 | 265,981 |\n| Operating income | 4,106 | 12,421 | 14,541 |\n| Interest income | 202 | 440 | 832 |\n| Interest expense | (848) | (1,417) | (1,600) |\n| Other income (expense), net | 346 | (183) | 203 |\n| Total non-operating income (expense) | (300) | (1,160) | (565) |\n| Income before income taxes | 3,806 | 11,261 | 13,976 |\n| Provision for income taxes | (769) | (1,197) | (2,374) |\n| Equity-method investment activity, net of tax | (4) | 9 | (14) |\n| Net income | $3,033 | $10,073 | $11,588 |"
+    },
+    {
+      "pageNumber": 38,
+      "content": "AMAZON.COM, INC.\nCONSOLIDATED BALANCE SHEETS\n(in millions, except per share data)\n\n| | December 31, |\n|---|2018|2019|\n| ASSETS | | |\n| Current assets: | | |\n| Cash and cash equivalents | $31,750 | $36,092 |\n| Marketable securities | 9,500 | 18,929 |\n| Inventories | 17,174 | 20,497 |\n| Accounts receivable, net | 16,677 | 20,816 |\n| Total current assets | 75,101 | 96,334 |\n| Property and equipment, net | 61,797 | 72,705 |\n| Operating leases | — | 25,141 |\n| Goodwill | 14,548 | 14,754 |\n| Other assets | 11,202 | 16,314 |\n| Total assets | $162,648 | $225,248 |"
+    },
+    {
+      "pageNumber": 39,
+      "content": "AMAZON.COM, INC.\nCONSOLIDATED BALANCE SHEETS (continued)\n\n| | December 31, |\n|---|2018|2019|\n| LIABILITIES AND STOCKHOLDERS' EQUITY | | |\n| Current liabilities: | | |\n| Accounts payable | $38,192 | $47,183 |\n| Accrued expenses and other | 23,663 | 32,439 |\n| Unearned revenue | 6,536 | 8,190 |\n| Total current liabilities | 68,391 | 87,812 |\n| Long-term lease liabilities | — | 25,819 |\n| Long-term debt | 23,495 | 23,414 |\n| Other long-term liabilities | 17,563 | 12,171 |\n| Total liabilities | 109,449 | 149,216 |\n| Stockholders' equity: | | |\n| Common stock | 5 | 5 |\n| Treasury stock | (1,837) | (1,837) |\n| Additional paid-in capital | 26,791 | 33,658 |\n| Accumulated other comprehensive income (loss) | (1,035) | (986) |\n| Retained earnings | 29,275 | 45,192 |\n| Total stockholders' equity | 53,199 | 76,032 |\n| Total liabilities and stockholders' equity | $162,648 | $225,248 |"
+    },
+    {
+      "pageNumber": 40,
+      "content": "AMAZON.COM, INC.\nCONSOLIDATED STATEMENTS OF CASH FLOWS\n(in millions)\n\n| | Year Ended December 31, |\n|---|2017|2018|2019|\n| CASH, CASH EQUIVALENTS, AND RESTRICTED CASH, BEGINNING OF PERIOD | $19,934 | $21,856 | $32,173 |\n| OPERATING ACTIVITIES: | | | |\n| Net income | 3,033 | 10,073 | 11,588 |\n| Adjustments to reconcile net income to net cash from operating activities: | | | |\n| Depreciation and amortization of property and equipment | 11,478 | 15,341 | 21,789 |\n| Stock-based compensation | 4,215 | 5,418 | 6,864 |\n| Other operating expense, net | 202 | 274 | 164 |\n| Net cash provided by operating activities | 18,434 | 30,723 | 38,514 |\n| INVESTING ACTIVITIES: | | | |\n| Purchases of property and equipment | (11,955) | (13,427) | (16,861) |\n| Net cash used in investing activities | (27,084) | (12,369) | (24,281) |\n| FINANCING ACTIVITIES: | | | |\n| Net cash provided by (used in) financing activities | 9,860 | (7,686) | (10,066) |\n| CASH, CASH EQUIVALENTS, AND RESTRICTED CASH, END OF PERIOD | $21,856 | $32,173 | $36,410 |"
+    }
+  ],
+  "tables": [
+    {
+      "id": "amzn-income-2019",
+      "page_number": 1,
+      "content_markdown": "| Metric | 2017 | 2018 | 2019 |\n|---|---|---|---|\n| Total net sales | $177,866 | $232,887 | $280,522 |\n| Operating income | $4,106 | $12,421 | $14,541 |\n| Net income | $3,033 | $10,073 | $11,588 |",
+      "bbox": {
+        "xmin": 0.1,
+        "ymin": 0.2,
+        "xmax": 0.9,
+        "ymax": 0.8
+      },
+      "confidence": 0.95,
+      "verification_status": "verified"
+    },
+    {
+      "id": "amzn-balance-2019",
+      "page_number": 2,
+      "content_markdown": "| Metric | 2018 | 2019 |\n|---|---|---|\n| Total assets | $162,648 | $225,248 |\n| Cash and equivalents | $31,750 | $36,092 |\n| Property and equipment, net | $61,797 | $72,705 |",
+      "bbox": {
+        "xmin": 0.1,
+        "ymin": 0.2,
+        "xmax": 0.9,
+        "ymax": 0.8
+      },
+      "confidence": 0.95,
+      "verification_status": "verified"
+    }
+  ]
+}
