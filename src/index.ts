@@ -79,8 +79,8 @@ export * from './adapters';
 export { default as pdfquery, PDFQuerySession } from './session';
 
 // Tag model
-export { buildTagTree, computeCoverage, findOrphans } from './tag';
-export type { Tag, BBox, TagTreeNode, PageData } from './tag';
+export { buildTagTree, computeCoverage, findOrphans, normalizeBbox, clampBbox } from './tag';
+export type { Tag, BBox, RawBBox, TagTreeNode, PageData } from './tag';
 
 // Tag utilities (type detection, value parsing, table expansion)
 export {

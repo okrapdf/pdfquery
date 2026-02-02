@@ -34,7 +34,7 @@ out.close(); doc.close()
 async function main() {
   const session = pdfquery();
   session.use(pymupdf({ pdf: { type: 'path', path: dest }, extractImages: true }) as any);
-  session.use(vlmOpenRouter({ model: 'qwen/qwen3-vl-235b-a22b-instruct' }) as any);
+  session.use(vlmOpenRouter() as any);
   session.use(vlmBboxDetect({ types: ['table', 'figure'] }) as any);
 
   session.on('vlm-bbox-detect:page-done', (_cb: any, data: any) => console.log(`  [vlm] page ${data.page} done in ${data.ms}ms`));

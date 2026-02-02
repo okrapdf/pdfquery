@@ -8,6 +8,10 @@
  * composable pdfquery plugin. Tags carry `attrs.source = 'vlm-bbox'` so
  * consumers can distinguish them from OCR-sourced tags.
  *
+ * Normalization convention (same as okrapdf):
+ *   VLM returns 0-1000 integer coords → plugin calls core normalizeBbox()
+ *   → Tag.bbox is always 0-1 { x, y, width, height }
+ *
  * Depends: any source plugin that sets pages:images, plus a VLM handler (vlm:call)
  * Reads artifacts:
  *   - pages:images (PageImage[])
@@ -17,6 +21,7 @@
 
 import type { PDFQueryPlugin, Tag } from 'pdfquery';
 import type { VLMCallHandler } from 'pdfquery';
+import { normalizeBbox, clampBbox } from 'pdfquery';
 import { ARTIFACT_KEYS } from '../types';
 import type { PageImage } from '../types';
 
@@ -31,8 +36,9 @@ export interface VLMBboxDetectConfig {
 
 const DEFAULT_PROMPT = [
   'Detect all {{types}} on this page.',
-  'Return a JSON array of objects: { "type": string, "bbox": { "x": number, "y": number, "width": number, "height": number }, "description": string, "confidence": number }.',
-  'Coordinates are normalized 0-1. Return [] if none found.',
+  'Return a JSON array of objects: { "type": string, "bbox": [x1, y1, x2, y2], "description": string, "confidence": number }.',
+  'Coordinates are integers in the 0-1000 range where (0,0) is top-left and (1000,1000) is bottom-right.',
+  'Return [] if none found.',
 ].join(' ');
 
 export function vlmBboxDetect(config: VLMBboxDetectConfig = {}): PDFQueryPlugin {
@@ -77,7 +83,8 @@ export function vlmBboxDetect(config: VLMBboxDetectConfig = {}): PDFQueryPlugin 
 
           for (const det of detections) {
             if (!types.includes(det.type)) continue;
-            const normalized = normalizeBbox(det.bbox, img.width, img.height);
+            // Plugin boundary: normalize raw VLM bbox → canonical 0-1 BBox
+            const normalized = normalizeBbox(det.bbox);
             if (!normalized) {
               ctx.emit('vlm-bbox-detect:invalid', { page: img.page, detection: det });
               continue;
@@ -105,77 +112,10 @@ export function vlmBboxDetect(config: VLMBboxDetectConfig = {}): PDFQueryPlugin 
   };
 }
 
-/**
- * Normalize any bbox format to {x, y, width, height} in 0-1 range.
- *
- * Matches the normalization in PdfPageWithOverlay.tsx and
- * /api/ocr/metadata/[jobId]/route.ts:
- *   - Handles negative width/height (flips origin)
- *   - Array [x1,y1,x2,y2] treated as 0-1000 Qwen grounding scale (÷1000)
- *   - Object {x,y,width,height} with values >1 treated as 0-1000 (÷1000)
- *
- * Accepted formats:
- *   { x, y, width, height }         — 0-1 or 0-1000 (auto-detected)
- *   { xmin, ymin, xmax, ymax }      — 0-1 or 0-1000 (auto-detected)
- *   [x1, y1, x2, y2]               — 0-1000 Qwen grounding coords
- */
-function normalizeBbox(
-  bbox: unknown,
-  _pageWidth: number,
-  _pageHeight: number,
-): { x: number; y: number; width: number; height: number } | null {
-  if (!bbox) return null;
-
-  let x: number, y: number, w: number, h: number;
-
-  if (Array.isArray(bbox)) {
-    // Array format: [x1, y1, x2, y2] — Qwen 0-1000 grounding coords
-    if (bbox.length < 4 || bbox.some(v => typeof v !== 'number')) return null;
-    const [x1, y1, x2, y2] = bbox as number[];
-    x = x1 / 1000;
-    y = y1 / 1000;
-    w = (x2 - x1) / 1000;
-    h = (y2 - y1) / 1000;
-  } else if (typeof bbox === 'object') {
-    const b = bbox as Record<string, unknown>;
-
-    if (typeof b.x === 'number' && typeof b.y === 'number'
-      && typeof b.width === 'number' && typeof b.height === 'number') {
-      x = b.x; y = b.y; w = b.width; h = b.height;
-    } else if (typeof b.xmin === 'number' && typeof b.ymin === 'number'
-      && typeof b.xmax === 'number' && typeof b.ymax === 'number') {
-      x = b.xmin; y = b.ymin; w = b.xmax - b.xmin; h = b.ymax - b.ymin;
-    } else {
-      return null;
-    }
-
-    // Auto-detect 0-1000 scale: if any value > 1, divide by 1000
-    if (x > 1 || y > 1 || w > 1 || h > 1) {
-      x /= 1000; y /= 1000; w /= 1000; h /= 1000;
-    }
-  } else {
-    return null;
-  }
-
-  // Handle negative dimensions (same as PdfPageWithOverlay.normalizeBbox)
-  if (w < 0) { x += w; w = Math.abs(w); }
-  if (h < 0) { y += h; h = Math.abs(h); }
-
-  return { x, y, width: w, height: h };
-}
-
-function clampBbox(bbox: { x: number; y: number; width: number; height: number }) {
-  const x = Math.max(0, Math.min(1, bbox.x));
-  const y = Math.max(0, Math.min(1, bbox.y));
-  const width = Math.max(0, Math.min(1 - x, bbox.width));
-  const height = Math.max(0, Math.min(1 - y, bbox.height));
-  return { x, y, width, height };
-}
-
 /** Parse VLM response — handles raw JSON or markdown-fenced JSON blocks */
 function parseDetections(raw: string): Array<{
   type: string;
-  bbox: { x: number; y: number; width: number; height: number };
+  bbox: unknown; // raw from VLM — normalizeBbox() handles all formats
   description?: string;
   confidence?: number;
 }> {

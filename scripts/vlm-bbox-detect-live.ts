@@ -7,7 +7,8 @@
  *   bun run scripts/vlm-bbox-detect-live.ts [pdf-path] [page]
  */
 
-import 'dotenv/config';
+import { config } from 'dotenv';
+config({ path: `${process.env.HOME}/dev/apikeys/.env` });
 import { mkdirSync } from 'fs';
 import { execSync } from 'child_process';
 import { join } from 'path';
@@ -83,7 +84,7 @@ async function main() {
   const t0 = Date.now();
   const session = pdfquery();
   session.use(pymupdf({ pdf: { type: 'path', path: onePage }, extractImages: true }) as any);
-  session.use(vlmOpenRouter({ model: 'qwen/qwen-2.5-vl-72b-instruct' }) as any);
+  session.use(vlmOpenRouter() as any);
   session.use(vlmBboxDetect({ types: ['table', 'figure'] }) as any);
 
   // Debug listeners
