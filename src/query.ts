@@ -705,12 +705,17 @@ export class QueryResult {
     const entity = this.elements[0];
     if (!entity) return undefined;
 
-    // Check meta first
+    // Check plugin attrs first (markdown, rows, csv, html, etc.)
+    if (entity.attrs && key in entity.attrs) {
+      return entity.attrs[key];
+    }
+
+    // Then meta
     if (key in entity.meta) {
       return entity.meta[key as keyof EntityMeta];
     }
 
-    // Then check entity fields
+    // Then entity fields
     if (key in entity) {
       return entity[key as keyof VirtualEntity];
     }
@@ -1791,11 +1796,15 @@ function matchesSingleSelector(entity: VirtualEntity, selector: string): boolean
 }
 
 function getEntityValue(entity: VirtualEntity, key: string): unknown {
-  // Check meta first
+  // Check plugin attrs first (markdown, rows, csv, source, etc.)
+  if (entity.attrs && key in entity.attrs) {
+    return entity.attrs[key];
+  }
+  // Then meta
   if (key in entity.meta) {
     return entity.meta[key as keyof EntityMeta];
   }
-  // Then check entity properties
+  // Then entity properties
   if (key in entity) {
     return entity[key as keyof VirtualEntity];
   }

@@ -46,8 +46,21 @@ for (const h of $('heading').values()) {
 
 // ── Tables ───────────────────────────────────────────────
 const tables = $('table');
-console.log('\n' + tables.count(), 'tables');
-console.log(tables.texts().map(t => t.slice(0, 80)));
+console.log('\n' + tables.count(), 'tables:');
+
+// Access rich attrs via selectors and .attr()
+for (let i = 0; i < tables.count(); i++) {
+  const t = tables.eq(i);
+  const md = t.attr('markdown') as string | undefined;
+  const rows = t.attr('rows') as unknown[][] | undefined;
+  const perfect = t.attr('isPerfectTable') ? ' (perfect)' : '';
+  console.log(`  table ${i + 1}: ${rows?.length ?? '?'} rows${perfect}`);
+  if (md) console.log(`    ${md.split('\n')[0].slice(0, 80)}...`);
+}
+
+// Filter tables by attribute
+const perfectTables = $('table[isPerfectTable=true]');
+console.log('\n' + perfectTables.count(), 'perfect tables');
 
 // ── Text search ──────────────────────────────────────────
 const revenue = $('*').contains('Revenue');

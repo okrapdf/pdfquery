@@ -66,6 +66,7 @@ function tagToVirtualEntity(tag: Tag): VirtualEntity {
     tableId: a.tableId as string | undefined,
     rowIndex: a.rowIndex as number | undefined,
     colIndex: a.colIndex as number | undefined,
+    attrs: Object.keys(a).length > 0 ? a : undefined,
   };
 }
 

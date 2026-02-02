@@ -150,6 +150,9 @@ export interface VirtualEntity {
   rowIndex?: number;          // Row position within table
   colIndex?: number;          // Column position within table
 
+  // Plugin-provided attributes (markdown, rows, csv, html, etc.)
+  attrs?: Record<string, unknown>;
+
   // jQuery-style arbitrary data store (for transformations, caching, etc.)
   _data?: EntityDataStore;
 }
