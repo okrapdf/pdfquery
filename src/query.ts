@@ -30,7 +30,7 @@ import type {
   QueryConfig,
   QueryResponse,
   QueryResultItem,
-  TransformationResult,
+
   EntityDataStore,
   BoundingBox,
   PageImage,
@@ -1206,116 +1206,36 @@ export class QueryResult {
   /**
    * Get markdown for selected elements.
    *
-   * Resolution order:
-   *   1. Entity attrs.markdown (already extracted, e.g. from LlamaParse)
-   *   2. markdown:pages artifact cache (per-page markdown)
-   *   3. extract:pages artifact handler (on-demand extraction — triggers API call)
-   *   4. VLM-based transformation (legacy path via imageUrl option)
-   *   5. Falls back to entity.text
+   * Delegates to `markdown:call` artifact handler if registered by a plugin
+   * (same pattern as .vlm() delegating to `vlm:call`).
+   * Falls back to attrs.markdown, then entity.text.
    *
    * @example
-   * // Eager: data already loaded
-   * $('table').eq(0).markdown()   // returns attrs.markdown immediately
-   *
-   * // Lazy: triggers LlamaParse for page 1 on demand
-   * const $ = await pdfquery.load([llamaParse({ pdf, defer: true })]);
-   * await $('page:first').markdown()  // calls API, injects tags, returns markdown
-   *
-   * // Per-entity VLM transformation (legacy)
-   * await $('table:first').markdown({ imageUrl: '...' })
+   * $('table').eq(0).markdown()           // attrs.markdown if available
+   * await $('page:first').markdown()      // calls plugin handler if registered
    */
-  async markdown(options?: {
-    imageUrl?: string;
-    model?: string;
-    promptStyle?: 'table' | 'page' | 'json';
-    apiEndpoint?: string;
-    force?: boolean;
-  }): Promise<string> {
-    const entity = this.first();
-    if (!entity) return '';
+  async markdown(options?: { force?: boolean }): Promise<string> {
     const { force = false } = options || {};
 
-    // ── 1. Check entity attrs.markdown (plugin-provided) ───────────
-    if (!force && entity.attrs?.markdown) {
+    // ── 1. Plugin handler (set by llamaParse, etc.) ────────────────
+    const artifacts = this.doc._artifacts;
+    type MarkdownHandler = (pages: number[], opts: { force: boolean }) => Promise<string | null>;
+    const handler = artifacts?.get('markdown:call') as MarkdownHandler | undefined;
+    if (handler) {
+      const selectedPages = [...new Set(this.elements.map(e => e.pageIndex + 1))];
+      const result = await handler(selectedPages, { force });
+      if (result != null) return result;
+    }
+
+    // ── 2. Entity attrs.markdown ───────────────────────────────────
+    const entity = this.first();
+    if (!entity) return '';
+    if (entity.attrs?.markdown) {
       return entity.attrs.markdown as string;
     }
 
-    // ── 2. Check markdown:pages artifact cache ─────────────────────
-    const artifacts = this.doc._artifacts;
-    if (!force && artifacts) {
-      type MarkdownPage = { page: number; markdown: string };
-      const mdPages = artifacts.get('markdown:pages') as MarkdownPage[] | undefined;
-      if (mdPages) {
-        // Collect unique pages from selection
-        const selectedPages = new Set(this.elements.map(e => e.pageIndex + 1));
-        const matched = mdPages.filter(mp => selectedPages.has(mp.page));
-        if (matched.length > 0) {
-          return matched.map(mp => mp.markdown).join('\n\n');
-        }
-      }
-    }
-
-    // ── 3. On-demand extraction via extract:pages handler ──────────
-    if (artifacts) {
-      type ExtractHandler = (pages: number[]) => Promise<{ tags: unknown[]; markdownPages: { page: number; markdown: string }[] }>;
-      const extractHandler = artifacts.get('extract:pages') as ExtractHandler | undefined;
-      if (extractHandler) {
-        const selectedPages = [...new Set(this.elements.map(e => e.pageIndex + 1))];
-        const result = await extractHandler(selectedPages);
-        if (result.markdownPages.length > 0) {
-          return result.markdownPages.map(mp => mp.markdown).join('\n\n');
-        }
-        // Extraction happened but no page-level markdown — fall through
-        // Tags were injected; check if entities now have attrs.markdown
-        // (entity refs are stale after recompile, but text is returned from result)
-      }
-    }
-
-    // ── 4. VLM-based transformation (legacy path) ──────────────────
-    const { imageUrl, model = 'qwen/qwen3-vl-235b-a22b-instruct', promptStyle = 'table', apiEndpoint = '/api/transform/entity-to-markdown' } = options || {};
-
-    const cached = entity._data?.transformation;
-    if (cached && !force) {
-      return cached.markdown;
-    }
-
-    if (!imageUrl) {
-      return entity.text || '';
-    }
-
-    try {
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl, model, promptStyle, entityType: entity.type }),
-      });
-
-      if (!response.ok) {
-        console.warn(`[QueryResult.markdown] API error: ${response.status}`);
-        return entity.text || '';
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        const transformResult: TransformationResult = {
-          success: true,
-          markdown: data.markdown,
-          model: data.model,
-          tokens: data.tokens,
-          timestamp: Date.now(),
-          promptStyle,
-        };
-        if (!entity._data) entity._data = {};
-        entity._data.transformation = transformResult;
-        return data.markdown;
-      }
-
-      return entity.text || '';
-    } catch (err) {
-      console.warn('[QueryResult.markdown] Error:', err);
-      return entity.text || '';
-    }
+    // ── 3. Fallback to text ────────────────────────────────────────
+    return entity.text || '';
   }
 
   /**

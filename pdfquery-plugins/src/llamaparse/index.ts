@@ -288,9 +288,20 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
       if (!apiKey) throw new Error('llamaparse: LLAMAINDEX_API_KEY not set');
       ctx.emit('llamaparse:start');
 
-      // ── Register on-demand extraction handler ──────────────────────
-      // Closes over pdf + api config. Called by .markdown() on cache miss.
-      const extractHandler = async (pages: number[]): Promise<{ tags: Tag[]; markdownPages: MarkdownPage[] }> => {
+      // ── Register markdown:call handler ─────────────────────────────
+      // Extends QueryResult.markdown() — owns cache check + deferred extraction.
+      // Same pattern as vlmOpenRouter setting vlm:call.
+      const markdownHandler = async (pages: number[], opts: { force: boolean }): Promise<string | null> => {
+        // 1. Check markdown:pages cache
+        if (!opts.force) {
+          const mdPages = (ctx.artifacts.get(ARTIFACT_KEYS.MARKDOWN_PAGES) as MarkdownPage[] | undefined) ?? [];
+          const matched = mdPages.filter(mp => pages.includes(mp.page));
+          if (matched.length > 0) {
+            return matched.map(mp => mp.markdown).join('\n\n');
+          }
+        }
+
+        // 2. On-demand extraction for missing pages
         const pageSpec = pages.join(',');
         ctx.emit('llamaparse:extract', { pages: pageSpec });
         const json = await uploadAndParse(config.pdf, {
@@ -304,22 +315,22 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
         });
         const result = processJsonResult(json, ctx, { includeWordOcr, includeLayout });
 
-        // Inject tags back into session via add:tags callback
+        // Inject tags back into session
         const addTags = ctx.artifacts.get(ARTIFACT_KEYS.ADD_TAGS) as ((tags: Tag[]) => void) | undefined;
         if (addTags && result.tags.length > 0) {
           addTags(result.tags);
         }
 
-        // Return markdown pages from this extraction
+        // Return markdown from this extraction
         const mdPages = (ctx.artifacts.get(ARTIFACT_KEYS.MARKDOWN_PAGES) as MarkdownPage[] | undefined) ?? [];
-        return { tags: result.tags, markdownPages: mdPages.filter(mp => pages.includes(mp.page)) };
+        const matched = mdPages.filter(mp => pages.includes(mp.page));
+        return matched.length > 0 ? matched.map(mp => mp.markdown).join('\n\n') : null;
       };
-      ctx.artifacts.set(ARTIFACT_KEYS.EXTRACT_PAGES, extractHandler);
+      ctx.artifacts.set('markdown:call', markdownHandler);
 
-      // ── Eager extraction (unless lazy) ─────────────────────────────
+      // ── Deferred mode: register handler only, skip eager extraction ─
       if (defer) {
-        // Deferred: register handler only, extraction happens at getter time (.markdown())
-        ctx.emit('llamaparse:deferred', { message: 'handler registered, extraction deferred to .markdown()' });
+        ctx.emit('llamaparse:deferred');
         return { tags: [] };
       }
 

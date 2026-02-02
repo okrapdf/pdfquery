@@ -21,8 +21,6 @@ export const ARTIFACT_KEYS = {
   OCR_PAGES: 'ocr:pages',
   /** MarkdownPage[] — per-page markdown, set by LlamaParse / VLM markdown plugins */
   MARKDOWN_PAGES: 'markdown:pages',
-  /** (pages: number[]) => Promise<ExtractResult> — on-demand page extraction */
-  EXTRACT_PAGES: 'extract:pages',
   /** (tags: Tag[]) => void — inject tags back into session post-load */
   ADD_TAGS: 'add:tags',
 } as const;
