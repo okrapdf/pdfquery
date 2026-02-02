@@ -132,15 +132,20 @@ normalizeBbox({ x: 0.1, y: 0.2, width: 0.8, height: 0.4 });
 
 ## Quick Start (No API Key)
 
+Try it now — no PDF, no API key: `npx tsx examples/basic.ts`
+
 ```ts
-import { pdfquery, loadFixture, createQueryEngine } from 'pdfquery';
+import { loadFixture, createQueryEngine } from 'pdfquery';
 
-const doc = loadFixture('financial-report');
-const $$ = createQueryEngine(doc);
+const session = loadFixture('financial-report');
+const $ = createQueryEngine(session.document!);
 
-$$('.table').count();           // 4 tables
-$$('.currency').sum();          // aggregate values
-$$('[confidence>0.9]').texts(); // high-confidence extractions
+$('*').count();                // 103 entities
+$('table').count();            // 8 tables
+$('table').texts();            // table markdown content
+$('[confidence>0.95]').count(); // 81 high-confidence entities
+$('*').countByType();          // Map { table: 8, header: 15, ... }
+$('*').countByPage();          // Map { 1: 53, 2: 29, 3: 21 }
 ```
 
 ## Quick Start (With PDF)
