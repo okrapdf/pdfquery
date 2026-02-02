@@ -1,299 +1,219 @@
 # pdfquery
 
-jQuery for PDFs. Query extracted document entities with CSS-like selectors.
-
-See `demo/README.md` for running the demo locally or via GitHub Pages.
+A DOM for PDFs. Load a PDF, query it with selectors, ask a VLM about any element.
 
 ```bash
 npm install pdfquery
 ```
 
-## Plugins (OCR/VLM)
-
-pdfquery is the query engine only. For OCR, VLM, and local PDF tooling, use the plugin package in this repo: `pdfquery-plugins/`.
-
-```bash
-pnpm install
-pnpm -C pdfquery-plugins build
-pnpm -C pdfquery-plugins test
-```
+## The Idea
 
 ```ts
-import pdfquery from 'pdfquery';
-import { pymupdf, vlmOpenRouter, llamaParse } from '@okrapdf/pdfquery-plugins';
-
 const doc = await pdfquery.load([
-  pymupdf({ pdf: { type: 'path', path: './report.pdf' }, extractImages: true }),
+  pymupdf({ pdf: { type: 'path', path: './10k.pdf' }, extractImages: true }),
   vlmOpenRouter(),
-  // or llamaParse({ pdf: { type: 'path', path: './report.pdf' } })
 ]);
 
-await doc.$('table').vlm('summarize this table');
+const $ = doc.$;
+
+$('page:first').vlm('what is this page about?');
+$('table').onPage(6).vlm('extract all dollar amounts');
+$('ocr').contains('revenue').eq(0).vlm('what revenue figure is shown here?');
 ```
 
-Highlights:
-- `pymupdf` (local extraction + optional page images)
-- `vlmOpenRouter` (vision queries with `.vlm()`)
-- `llamaParse` (LlamaIndex Cloud API)
-- `doclingServe`, `okraOcr`, `pageIndex`, adapter bridges
+No intermediate HTML. No markdown conversion step. You go straight from PDF to queryable DOM, and any element can talk to a vision model.
 
-Full docs + examples: `pdfquery-plugins/README.md` and `pdfquery-plugins/examples/`.
+## How It Works
 
-## What This Is (and Isn't)
-
-**pdfquery does NOT parse PDFs.** It takes the **output** of any document processing service and makes it queryable:
+pdfquery is a document DOM with a plugin system. Plugins handle I/O (PDF parsing, OCR, VLM calls). The core handles the query engine, spatial math, and tag tree.
 
 ```
-PDF → [Document Processor] → bboxes + text + metadata → pdfquery → queryable DOM
-              ↑
-      (partitioner, parser, processor, analyzer)
-      Unstructured, Docling, LlamaParse,
-      Google DocAI, Azure, Textract, etc.
+PDF file
+  |  pymupdf plugin (local, no API)
+  v
+Tags: ocr blocks, tables, figures -- each with a 0-1 normalized bbox
+  |  vlmOpenRouter plugin (sets up VLM handler)
+  v
+Queryable DOM -- $('table').vlm('summarize'), $('page:first').text(), etc.
+  |  vlmBboxDetect plugin (optional, asks VLM to find entities by sight)
+  v
+More tags: VLM-detected tables/figures with bboxes overlaid
 ```
 
-Think of pdfquery as a **conceptual port of jQuery**. Same syntax patterns, completely different data structure.
+Plugins are composable. Use one, use all, bring your own:
 
-### How Close to jQuery?
+```ts
+// Local only, no API keys
+pdfquery.load([ pymupdf({ pdf: { type: 'path', path: './report.pdf' } }) ]);
 
-| Feature | jQuery | pdfquery |
-|---------|--------|----------|
-| **The "$"** | `$('.class')` selects HTML elements | `$$('.table')` selects OCR-detected entities |
-| **Traversal** | Browser DOM (tags, IDs, classes) | Virtual Doc (tables, figures, fields) |
-| **Purpose** | DOM manipulation (hide, show, append) | **Data extraction** (sum, avg, count) |
-| **Selectors** | CSS levels 1-3 | CSS-like + data filters like `[confidence>0.9]` |
+// Local extraction + VLM queries
+pdfquery.load([ pymupdf({ pdf, extractImages: true }), vlmOpenRouter() ]);
 
-**Key difference:** jQuery changes how a webpage *looks*. pdfquery extracts information from documents already processed by AI.
+// Cloud OCR
+pdfquery.load([ llamaParse({ pdf }) ]);
 
-### Syntax Mapping from jQuery
-
-| jQuery | pdfquery | Notes |
-|--------|----------|-------|
-| `.val()` | `.text()` / `.values()` | `.values()` strips currency symbols → numbers |
-| `.each(fn)` | `.texts()` | Returns array directly |
-| `.find()` | `.filter()` | Same concept |
-| — | `.sum()`, `.avg()`, `.stats()` | Aggregation methods jQuery doesn't have |
-
-### Where pdfquery Sits in the Pipeline
-
-```
-┌─────────────┐     ┌──────────────────────┐     ┌───────────┐
-│   PDF/IMG   │ ──▶ │  Document Processor  │ ──▶ │ pdfquery  │
-│  (raw file) │     │  (layout + extract)  │     │ (query)   │
-└─────────────┘     └──────────────────────┘     └───────────┘
-                              │
-                Outputs structured elements:
-                bboxes + text + confidence
+// VLM visual entity detection (finds tables/figures the OCR missed)
+pdfquery.load([ pymupdf({ pdf, extractImages: true }), vlmOpenRouter(), vlmBboxDetect({ types: ['table', 'figure'] }) ]);
 ```
 
-pdfquery consumes the **output** of document processing services. You need one of these first:
+## Plugins
 
-| Service | Class/Method | Bbox Field | Normalization |
-|---------|--------------|------------|---------------|
-| **Unstructured** | `partition()` → `Element.metadata.coordinates` | `CoordinatesMetadata.points` (tuple of x,y) | Divide by `system.layout_width/height` |
-| **Docling** | `DoclingDocument` → `item.prov[].bbox` | `BoundingBox(l, t, r, b, coord_origin)` | Already normalized or use `coord_origin` |
-| **Google DocAI** | `Document.pages[].blocks[]` | `boundingPoly.normalizedVertices[].x/y` | Already 0-1 normalized |
-| **Azure DocIntel** | `AnalyzeResult.documents[].fields[]` | `BoundingRegion.polygon` (list of Points) | Divide by page `width/height` |
-| **AWS Textract** | `AnalyzeDocumentResponse.Blocks[]` | `Geometry.BoundingBox.Left/Top/Width/Height` | Already 0-1 normalized |
-| **Tesseract** | `pytesseract.image_to_data()` | `left, top, width, height` (pixels) | Divide by image dimensions |
+The plugin package lives at `pdfquery-plugins/` in this repo (`@okrapdf/pdfquery-plugins`).
 
-### Example: Normalizing Vendor Output
+| Plugin | What it does | Needs API key |
+|--------|-------------|---------------|
+| `pymupdf` | Local PDF text + table extraction, optional page rasterization | No |
+| `vlmOpenRouter` | Vision model queries via OpenRouter (`.vlm()` on any element) | `OPENROUTER_API_KEY` |
+| `vlmBboxDetect` | Ask VLM to visually detect tables/figures and return bboxes | Uses vlmOpenRouter |
+| `llamaParse` | LlamaIndex Cloud extraction | `LLAMAINDEX_API_KEY` |
+| `googleOcr` | Google Document AI | GCP credentials |
+| `doclingServe` | IBM Docling local server | No (self-hosted) |
+| `serializeHtml` | Render tag tree as inspectable HTML | No |
+| `pageIndex` | Page-level indexing for fast lookups | No |
 
-```typescript
-// AWS Textract (already normalized 0-1)
-const textractBlock = { Geometry: { BoundingBox: { Left: 0.1, Top: 0.2, Width: 0.3, Height: 0.05 }}};
-const bbox = {
-  x: textractBlock.Geometry.BoundingBox.Left,       // 0.1
-  y: textractBlock.Geometry.BoundingBox.Top,        // 0.2  
-  width: textractBlock.Geometry.BoundingBox.Width,  // 0.3
-  height: textractBlock.Geometry.BoundingBox.Height // 0.05
-};
+Default VLM model: `qwen/qwen3-vl-235b-a22b-instruct` (Qwen3 VL 235B via OpenRouter).
 
-// Tesseract (pixels → normalize by dividing by image size)
-const tesseractWord = { left: 100, top: 200, width: 150, height: 30 };
-const imageSize = { width: 1000, height: 1400 };
-const bbox = {
-  x: tesseractWord.left / imageSize.width,      // 0.1
-  y: tesseractWord.top / imageSize.height,      // 0.143
-  width: tesseractWord.width / imageSize.width, // 0.15
-  height: tesseractWord.height / imageSize.height // 0.021
-};
+## Bounding Box Convention
 
-// Google DocAI (normalizedVertices already 0-1)
-const docaiBlock = { boundingPoly: { normalizedVertices: [{x:0.1,y:0.2}, {x:0.4,y:0.2}, {x:0.4,y:0.25}, {x:0.1,y:0.25}]}};
-const v = docaiBlock.boundingPoly.normalizedVertices;
-const bbox = { x: v[0].x, y: v[0].y, width: v[1].x - v[0].x, height: v[2].y - v[0].y };
+Follows the same convention as [okrapdf](https://github.com/okrapdf/okrapdf):
+
+| Layer | Scale | Format |
+|-------|-------|--------|
+| VLM output (Qwen VL) | 0-1000 integers | `[x1, y1, x2, y2]` |
+| Plugin boundary | normalizes to 0-1 | `normalizeBbox()` from core |
+| Tag storage | 0-1 | `{ x, y, width, height }` |
+
+The core exports `normalizeBbox()` and `clampBbox()`. Plugins call these at the boundary -- the core owns the contract, plugins handle the conversion.
+
+```ts
+import { normalizeBbox, clampBbox } from 'pdfquery';
+
+// Qwen VL returns [x1, y1, x2, y2] in 0-1000
+normalizeBbox([102, 205, 943, 588]);
+// → { x: 0.102, y: 0.205, width: 0.841, height: 0.383 }
+
+// Auto-detects 0-1000 objects too
+normalizeBbox({ x: 102, y: 205, width: 841, height: 383 });
+// → { x: 0.102, y: 0.205, width: 0.841, height: 0.383 }
+
+// Already 0-1? Passes through
+normalizeBbox({ x: 0.1, y: 0.2, width: 0.8, height: 0.4 });
+// → { x: 0.1, y: 0.2, width: 0.8, height: 0.4 }
 ```
 
-### Input Format
+## Selectors
 
-pdfquery accepts JSON with:
-- **Bounding boxes**: Normalized 0-1 coordinates (`{x, y, width, height}` or `{xmin, ymin, xmax, ymax}`)
-- **Text content**: The extracted text
-- **Entity metadata**: Type, confidence score, verification status
+| Selector | Example |
+|----------|---------|
+| Type | `$('table')`, `$('figure')`, `$('ocr')` |
+| Pseudo | `$('page:first')`, `$(':last')`, `$(':page(5)')`, `$(':pages(1-10)')` |
+| Attribute | `$('[confidence>0.9]')`, `$('[source=vlm-bbox]')` |
+| Text | `$(':contains(revenue)')` |
+| ID | `$('#entity-id')` |
+| Universal | `$('*')` |
 
-```typescript
-// Example: what OCR services output → what pdfquery consumes
-{
-  tables: [{
-    id: "table-1",
-    page_number: 1,
-    markdown: "| Revenue | $12.5B |\n|---|---|",
-    bbox: { xmin: 0.05, ymin: 0.15, xmax: 0.95, ymax: 0.5 },  // normalized 0-1
-    confidence: 0.98
-  }],
-  entities: [{
-    id: "field-total",
-    page_number: 1,
-    field_label: "Total",
-    suggested_value: "$205.07",
-    bounding_box: { x: 0.75, y: 0.68, width: 0.15, height: 0.03 },
-    confidence: 0.98
-  }]
-}
-```
+## Methods
 
-## Quick Start (No API Key Needed)
+**Filtering**: `.filter()`, `.not()`, `.contains()`, `.matches()`, `.onPage()`, `.eq()`, `.take()`, `.skip()`
 
-```typescript
-import { loadFixture, createQueryEngine } from 'pdfquery';
+**Data**: `.text()`, `.texts()`, `.values()`, `.attr()`, `.data()`, `.first()`, `.last()`
 
-// Load sample data (financial report or invoice)
+**Aggregation**: `.count()`, `.sum()`, `.avg()`, `.min()`, `.max()`, `.stats()`, `.countByType()`, `.countByPage()`
+
+**Grouping**: `.groupBy()`, `.groupByPage()`, `.groupByType()`
+
+**AI**: `.vlm(prompt)` -- ask a vision model about the selected elements. `.markdown()` -- VLM-powered markdown extraction.
+
+**Rendering**: `.html()`, `.htmlDocument()`, `.json()`
+
+**Spatial**: `.near()` -- find entities near the selection by distance threshold.
+
+**Styling**: `.css()` -- attach render styles (used by overlay scripts for bbox visualization).
+
+## Quick Start (No API Key)
+
+```ts
+import { pdfquery, loadFixture, createQueryEngine } from 'pdfquery';
+
 const doc = loadFixture('financial-report');
 const $$ = createQueryEngine(doc);
 
-// Query like jQuery
 $$('.table').count();           // 4 tables
 $$('.currency').sum();          // aggregate values
 $$('[confidence>0.9]').texts(); // high-confidence extractions
 ```
 
-Available fixtures: `'financial-report'`, `'invoice'`
+## Quick Start (With PDF)
 
-## Usage with Your Own Data
+```ts
+import pdfquery from 'pdfquery';
+import { pymupdf, vlmOpenRouter } from '@okrapdf/pdfquery-plugins';
 
-```typescript
-import { DocCompiler, createQueryEngine } from 'pdfquery';
+const doc = await pdfquery.load([
+  pymupdf({ pdf: { type: 'path', path: './report.pdf' }, extractImages: true }),
+  vlmOpenRouter(),
+]);
 
-// Your OCR output (from any service)
-const ocrOutput = {
-  tables: [{ id: 't1', page_number: 1, markdown: '...', bbox: {...}, confidence: 0.95 }],
-  entities: [{ id: 'e1', page_number: 1, suggested_value: '$100', bounding_box: {...} }]
-};
+const $ = doc.$;
 
-// Compile into queryable DOM
-const compiler = new DocCompiler({ documentId: 'my-doc' });
-compiler.addTables(ocrOutput.tables);
-compiler.addEntities(ocrOutput.entities);
-const doc = compiler.compile();
+// Count what was extracted
+console.log($('*').count(), 'entities');
+console.log($('table').count(), 'tables');
 
-// Query
-const $$ = createQueryEngine(doc);
-$$('.table').stats();
+// Ask the VLM about page 1
+const summary = await $('page:first').vlm('summarize this page in 2 sentences');
+
+// Find revenue figures
+const rev = await $('ocr').contains('revenue').eq(0).vlm('what is the exact revenue figure?');
 ```
 
-## Selectors
+## Tag Model
 
-| Selector | Description |
-|----------|-------------|
-| `*` | All entities |
-| `.table` | Tables |
-| `.figure` | Figures/charts |
-| `.currency` | Currency values |
-| `.percentage` | Percentages |
-| `.date` | Dates |
-| `.footnote` | Footnotes |
-| `#entity_id` | By ID |
-| `[attr=value]` | Attribute equals |
-| `[attr>value]` | Attribute greater than |
-| `[confidence>0.9]` | High confidence |
-| `:contains(text)` | Text search |
-| `:page(5)` | On specific page |
-| `:pages(1-10)` | Page range |
-| `:first` | First match |
-| `:last` | Last match |
+Everything is a `Tag`. Tags have a type, page number, bbox, and optional text/attributes:
 
-## Methods
-
-### Filtering
-- `.filter(selector)` - Filter by selector or predicate
-- `.not(selector)` - Exclude matches
-- `.contains(text)` - Text search
-- `.matches(regex)` - Regex match
-- `.onPage(n)` - Filter to page
-- `.take(n)` / `.skip(n)` - Limit results
-
-### Data Access
-- `.text()` - Get text of first element
-- `.texts()` - Get all texts as array
-- `.values()` - Get parsed numeric values
-- `.attr(key)` - Get attribute
-- `.attr(key, value)` - Set attribute
-- `.data(key)` - Get/set arbitrary data
-
-### Aggregation
-- `.stats()` - Verification statistics
-- `.sum()` / `.avg()` / `.min()` / `.max()` - Numeric aggregation
-- `.count()` - Count entities
-- `.countByType()` - Count by entity type
-- `.countByPage()` - Count by page
-
-### Grouping
-- `.groupBy(fn)` - Group by key function
-- `.groupByPage()` - Group by page number
-- `.groupByType()` - Group by entity type
-
-### AI / VLM
-- `.vlm(prompt)` - Ask a vision model about the selected elements (needs `vlmOpenRouter` plugin)
-- `.markdown()` - Transform entity to markdown via VLM
-
-### Rendering
-- `.html()` - Render as HTML
-- `.htmlDocument()` - Full HTML document
-- `.json()` - JSON string
-
-## Multi-Layer Builder Pattern
-
-pdfquery merges **multiple extraction layers** into one queryable DOM. Each layer can come from a different OCR/VLM service:
-
-```typescript
-const compiler = new DocCompiler({ documentId: 'doc' });
-
-// Layer 1: Raw OCR blocks (word/line level from Tesseract, Google DocAI)
-compiler.addOcrBlocks([
-  { id: 'ocr-1', page: 1, text: 'Revenue', bbox: { x: 0.1, y: 0.2, width: 0.15, height: 0.03 }, confidence: 0.99 },
-  { id: 'ocr-2', page: 1, text: '$12.5B', bbox: { x: 0.3, y: 0.2, width: 0.1, height: 0.03 }, confidence: 0.97 },
-]);
-
-// Layer 2: Tables (from table extraction model)
-compiler.addTables([
-  { id: 't1', page_number: 1, markdown: '| Revenue | $12.5B |', bbox: { xmin: 0.05, ymin: 0.15, xmax: 0.95, ymax: 0.5 }, confidence: 0.95 }
-]);
-
-// Layer 3: Semantic entities (figures, footnotes from VLM)
-compiler.addExtractedEntities([
-  { id: 'fig-1', type: 'figure', title: 'Revenue Chart', page: 1, bbox: { x: 0.1, y: 0.6, width: 0.8, height: 0.3 }, confidence: 0.92 }
-]);
-
-// Compile all layers → one DOM
-const doc = compiler.compile();
-const $$ = createQueryEngine(doc);
-
-// Query across all layers
-$$('.table').count();        // tables
-$$('span.ocr-block').count(); // raw OCR
-$$('.figure').count();       // figures
-$$('*').onPage(1).count();   // everything on page 1
+```ts
+interface Tag {
+  id: string;
+  type: string;           // 'table', 'figure', 'ocr', 'heading', ...
+  page: number;           // 1-indexed
+  bbox: BBox;             // { x, y, width, height } normalized 0-1
+  text?: string;
+  attrs?: Record<string, unknown>;
+}
 ```
 
-| Method | Layer Type | Granularity |
-|--------|-----------|-------------|
-| `addOcrBlocks()` | Raw OCR | Word/line bboxes |
-| `addTables()` | Tables | Table bbox + markdown |
-| `addEntities()` | Fields | Key-value pairs |
-| `addExtractedEntities()` | Semantic | Figures, footnotes, summaries |
-| `addMarkdownBlocks()` | VLM output | Full-page markdown |
+The tag tree is built by bbox containment -- a table contains its OCR blocks because its bbox encloses theirs. Same spatial nesting as a real DOM.
 
-This is the "hydration" model — each layer enriches the same coordinate system.
+## Events
+
+Plugins emit events you can listen to:
+
+```ts
+const session = pdfquery();
+session.use(pymupdf({ pdf, extractImages: true }));
+session.use(vlmOpenRouter());
+session.use(vlmBboxDetect({ types: ['table', 'figure'] }));
+
+session.on('vlm-bbox-detect:page-start', (_, d) => console.log(`detecting page ${d.page}...`));
+session.on('vlm-bbox-detect:page-done', (_, d) => console.log(`page ${d.page} done in ${d.ms}ms`));
+session.on('vlm-bbox-detect:raw', (_, d) => console.log('raw VLM response:', d.response));
+
+const doc = await session.load();
+```
+
+## Vendor Adapters
+
+If you already have OCR output from another service, pdfquery has adapters to normalize it into Tags:
+
+```ts
+import { adapters } from 'pdfquery';
+
+// Unstructured, Google DocAI, LlamaParse, Docling, Azure, Textract
+const tags = adapters.unstructured(unstructuredOutput);
+const tags = adapters.googleDocai(docaiOutput);
+```
+
+Or bring raw JSON -- any `{ id, type, page, bbox, text }` array works as Tags directly.
 
 ## License
 
