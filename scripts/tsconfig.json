@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "../dist/scripts",
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true
+  },
+  "include": ["./**/*.ts"],
+  "references": [
+    { "path": ".." },
+    { "path": "../pdfquery-plugins" }
+  ]
+}
