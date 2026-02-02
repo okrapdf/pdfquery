@@ -1,6 +1,6 @@
 # pdfquery
 
-jQuery for PDFs. CSS selectors, spatial queries, and vision models -- on any PDF.
+jQuery for PDFs. CSS selectors and vision models on any PDF.
 
 ```bash
 npm install pdfquery @okrapdf/pdfquery-plugins
@@ -32,35 +32,7 @@ await $('table').css({ margin: 20 }).vlm('what are the column headers?');
 
 ---
 
-### 2. Spatial queries -- find what's next to what
-
-Every entity has a bounding box. You can query by proximity, direction, or region -- the way you'd read a document with your eyes.
-
-```ts
-// find the label to the left of each currency value
-$('currency').leftOf({ maxDistance: 0.3, requireOverlap: true });
-
-// find footnotes below figures
-$('figure').below({ maxDistance: 0.2 });
-
-// find everything near a specific table (within 15% of page)
-$('table').eq(0).near(0.15);
-
-// find entities in the top-right quadrant of page 1
-$('*').onPage(1).within({ xmin: 0.5, ymin: 0, xmax: 1, ymax: 0.5 });
-```
-
-Combine spatial queries with VLM for things like "read the value to the right of this label":
-
-```ts
-const label = $('ocr').contains('Total Revenue').eq(0);
-const nearby = label.rightOf({ maxDistance: 0.15, requireOverlap: true });
-await nearby.vlm('what is the exact dollar amount?');
-```
-
----
-
-### 3. Deferred extraction -- only parse what you query
+### 2. Deferred extraction -- only parse what you query
 
 With `defer: true`, the plugin registers a handler but doesn't extract anything. Extraction happens when you call `.markdown()` -- only for the pages you selected.
 
