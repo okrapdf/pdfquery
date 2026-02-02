@@ -50,6 +50,8 @@ export interface LlamaParseConfig {
   timeoutMs?: number;
   /** Target specific pages: "1,3,5-10" */
   targetPages?: string;
+  /** Defer extraction to getter time (.markdown()). Registers handler at load, extracts on access. */
+  defer?: boolean;
   /** Include word-level OCR from embedded images (default: false) */
   includeWordOcr?: boolean;
   /** Include layout[] detections as separate tags (default: true) */
@@ -274,6 +276,7 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
     pollIntervalMs = 2000,
     timeoutMs = 300_000,
     targetPages,
+    defer = false,
     includeWordOcr = false,
     includeLayout = true,
     takeScreenshot = true,
@@ -314,9 +317,9 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
       ctx.artifacts.set(ARTIFACT_KEYS.EXTRACT_PAGES, extractHandler);
 
       // ── Eager extraction (unless lazy) ─────────────────────────────
-      if (targetPages === 'lazy') {
-        // Lazy mode: register handler only, don't extract anything yet
-        ctx.emit('llamaparse:lazy', { message: 'handler registered, extraction deferred to .markdown()' });
+      if (defer) {
+        // Deferred: register handler only, extraction happens at getter time (.markdown())
+        ctx.emit('llamaparse:deferred', { message: 'handler registered, extraction deferred to .markdown()' });
         return { tags: [] };
       }
 

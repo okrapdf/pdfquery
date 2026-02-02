@@ -28,10 +28,10 @@ session.on('llamaparse:uploaded', (_, d: any) => console.log('uploaded, job:', d
 session.on('llamaparse:polling', () => process.stdout.write('.'));
 session.on('llamaparse:done', () => console.log(' done'));
 
-// targetPages: 'lazy' — registers extraction handler but skips upfront API call
+// defer: true — registers extraction handler at load, extracts on .markdown() access
 session.use(llamaParse({
   pdf: { type: 'path', path: pdfPath },
-  targetPages: 'lazy',
+  defer: true,
 }) as any);
 
 const doc = await session.load();

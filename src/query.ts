@@ -1218,7 +1218,7 @@ export class QueryResult {
    * $('table').eq(0).markdown()   // returns attrs.markdown immediately
    *
    * // Lazy: triggers LlamaParse for page 1 on demand
-   * const $ = await pdfquery.load([llamaParse({ pdf, targetPages: 'lazy' })]);
+   * const $ = await pdfquery.load([llamaParse({ pdf, defer: true })]);
    * await $('page:first').markdown()  // calls API, injects tags, returns markdown
    *
    * // Per-entity VLM transformation (legacy)
