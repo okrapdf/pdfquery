@@ -1204,15 +1204,25 @@ export class QueryResult {
   }
 
   /**
-   * Transform first entity to markdown using VLM (like jQuery's .text() but AI-powered)
+   * Get markdown for selected elements.
    *
-   * Calls /api/transform/entity-to-markdown with the entity's image.
-   * Stores full response on entity._data.transformation for later access.
-   * Returns cached result if available (use force: true to bypass).
+   * Resolution order:
+   *   1. Entity attrs.markdown (already extracted, e.g. from LlamaParse)
+   *   2. markdown:pages artifact cache (per-page markdown)
+   *   3. extract:pages artifact handler (on-demand extraction — triggers API call)
+   *   4. VLM-based transformation (legacy path via imageUrl option)
+   *   5. Falls back to entity.text
    *
    * @example
-   * const markdown = await $$('.table:first').markdown();
-   * const result = $$('.table:first').data('transformation'); // { markdown, model, tokens }
+   * // Eager: data already loaded
+   * $('table').eq(0).markdown()   // returns attrs.markdown immediately
+   *
+   * // Lazy: triggers LlamaParse for page 1 on demand
+   * const $ = await pdfquery.load([llamaParse({ pdf, targetPages: 'lazy' })]);
+   * await $('page:first').markdown()  // calls API, injects tags, returns markdown
+   *
+   * // Per-entity VLM transformation (legacy)
+   * await $('table:first').markdown({ imageUrl: '...' })
    */
   async markdown(options?: {
     imageUrl?: string;
@@ -1223,16 +1233,47 @@ export class QueryResult {
   }): Promise<string> {
     const entity = this.first();
     if (!entity) return '';
+    const { force = false } = options || {};
 
-    const {
-      imageUrl,
-      model = 'qwen/qwen3-vl-235b-a22b-instruct',
-      promptStyle = 'table',
-      apiEndpoint = '/api/transform/entity-to-markdown',
-      force = false,
-    } = options || {};
+    // ── 1. Check entity attrs.markdown (plugin-provided) ───────────
+    if (!force && entity.attrs?.markdown) {
+      return entity.attrs.markdown as string;
+    }
 
-    // Return cached result unless force refresh
+    // ── 2. Check markdown:pages artifact cache ─────────────────────
+    const artifacts = this.doc._artifacts;
+    if (!force && artifacts) {
+      type MarkdownPage = { page: number; markdown: string };
+      const mdPages = artifacts.get('markdown:pages') as MarkdownPage[] | undefined;
+      if (mdPages) {
+        // Collect unique pages from selection
+        const selectedPages = new Set(this.elements.map(e => e.pageIndex + 1));
+        const matched = mdPages.filter(mp => selectedPages.has(mp.page));
+        if (matched.length > 0) {
+          return matched.map(mp => mp.markdown).join('\n\n');
+        }
+      }
+    }
+
+    // ── 3. On-demand extraction via extract:pages handler ──────────
+    if (artifacts) {
+      type ExtractHandler = (pages: number[]) => Promise<{ tags: unknown[]; markdownPages: { page: number; markdown: string }[] }>;
+      const extractHandler = artifacts.get('extract:pages') as ExtractHandler | undefined;
+      if (extractHandler) {
+        const selectedPages = [...new Set(this.elements.map(e => e.pageIndex + 1))];
+        const result = await extractHandler(selectedPages);
+        if (result.markdownPages.length > 0) {
+          return result.markdownPages.map(mp => mp.markdown).join('\n\n');
+        }
+        // Extraction happened but no page-level markdown — fall through
+        // Tags were injected; check if entities now have attrs.markdown
+        // (entity refs are stale after recompile, but text is returned from result)
+      }
+    }
+
+    // ── 4. VLM-based transformation (legacy path) ──────────────────
+    const { imageUrl, model = 'qwen/qwen3-vl-235b-a22b-instruct', promptStyle = 'table', apiEndpoint = '/api/transform/entity-to-markdown' } = options || {};
+
     const cached = entity._data?.transformation;
     if (cached && !force) {
       return cached.markdown;
@@ -1246,12 +1287,7 @@ export class QueryResult {
       const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageUrl,
-          model,
-          promptStyle,
-          entityType: entity.type,
-        }),
+        body: JSON.stringify({ imageUrl, model, promptStyle, entityType: entity.type }),
       });
 
       if (!response.ok) {
@@ -1262,7 +1298,6 @@ export class QueryResult {
       const data = await response.json();
 
       if (data.success) {
-        // Store full transformation result on entity
         const transformResult: TransformationResult = {
           success: true,
           markdown: data.markdown,
@@ -1271,10 +1306,8 @@ export class QueryResult {
           timestamp: Date.now(),
           promptStyle,
         };
-
         if (!entity._data) entity._data = {};
         entity._data.transformation = transformResult;
-
         return data.markdown;
       }
 

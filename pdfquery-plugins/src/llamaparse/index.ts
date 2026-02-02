@@ -193,6 +193,77 @@ function bboxOverlaps(a: BBox, b: BBox): boolean {
 }
 
 // ============================================================================
+// Upload / Poll / Fetch — reusable for both eager and lazy paths
+// ============================================================================
+
+async function uploadAndParse(
+  pdf: LlamaParseConfig['pdf'],
+  opts: {
+    apiKey: string;
+    apiBase: string;
+    pollIntervalMs: number;
+    timeoutMs: number;
+    targetPages?: string;
+    takeScreenshot: boolean;
+    emit: (event: string, data?: unknown) => void;
+  },
+): Promise<LPJsonResult> {
+  const { apiKey, apiBase, pollIntervalMs, timeoutMs, targetPages, takeScreenshot, emit } = opts;
+
+  // ── 1. Upload ────────────────────────────────────────────────────
+  const formData = new FormData();
+  let fileBlob: Blob;
+  let fileName: string;
+  if (pdf.type === 'path') {
+    const data = await readFile(pdf.path);
+    fileBlob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
+    fileName = pdf.path.split('/').pop() || 'document.pdf';
+  } else {
+    fileBlob = new Blob([new Uint8Array(pdf.data)], { type: 'application/pdf' });
+    fileName = pdf.fileName || 'document.pdf';
+  }
+  formData.append('file', fileBlob, fileName);
+  formData.append('extract_layout', 'true');
+  if (takeScreenshot) formData.append('take_screenshot', 'true');
+  if (targetPages) formData.append('target_pages', targetPages);
+
+  const uploadRes = await fetch(`${apiBase}/api/parsing/upload`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: formData,
+  });
+  if (!uploadRes.ok) {
+    const body = await uploadRes.text();
+    throw new Error(`llamaparse upload failed: ${uploadRes.status} ${body.slice(0, 200)}`);
+  }
+  const { id: jobId } = await uploadRes.json() as { id: string };
+  emit('llamaparse:uploaded', { jobId, targetPages });
+
+  // ── 2. Poll ──────────────────────────────────────────────────────
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    emit('llamaparse:polling', { jobId });
+    const statusRes = await fetch(`${apiBase}/api/parsing/job/${jobId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!statusRes.ok) throw new Error(`llamaparse status check failed: ${statusRes.status}`);
+    const { status } = await statusRes.json() as { status: string };
+    if (status === 'SUCCESS') break;
+    if (status === 'ERROR') throw new Error('llamaparse: job failed');
+    await sleep(pollIntervalMs);
+  }
+  if (Date.now() >= deadline) throw new Error('llamaparse: timeout waiting for job');
+
+  // ── 3. Fetch JSON result ─────────────────────────────────────────
+  const resultRes = await fetch(`${apiBase}/api/parsing/job/${jobId}/result/json`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!resultRes.ok) throw new Error(`llamaparse result fetch failed: ${resultRes.status}`);
+  emit('llamaparse:done', { jobId });
+  return await resultRes.json() as LPJsonResult;
+}
+
+// ============================================================================
 // Plugin
 // ============================================================================
 
@@ -214,62 +285,54 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
       if (!apiKey) throw new Error('llamaparse: LLAMAINDEX_API_KEY not set');
       ctx.emit('llamaparse:start');
 
-      // ── 1. Upload ──────────────────────────────────────────────────
-      const formData = new FormData();
-      let fileBlob: Blob;
-      let fileName: string;
-      if (config.pdf.type === 'path') {
-        const data = await readFile(config.pdf.path);
-        fileBlob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
-        fileName = config.pdf.path.split('/').pop() || 'document.pdf';
-      } else {
-        fileBlob = new Blob([new Uint8Array(config.pdf.data)], { type: 'application/pdf' });
-        fileName = config.pdf.fileName || 'document.pdf';
-      }
-      formData.append('file', fileBlob, fileName);
-      formData.append('extract_layout', 'true');
-      if (takeScreenshot) formData.append('take_screenshot', 'true');
-      if (targetPages) formData.append('target_pages', targetPages);
-
-      const uploadRes = await fetch(`${apiBase}/api/parsing/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}` },
-        body: formData,
-      });
-      if (!uploadRes.ok) {
-        const body = await uploadRes.text();
-        throw new Error(`llamaparse upload failed: ${uploadRes.status} ${body.slice(0, 200)}`);
-      }
-      const { id: jobId } = await uploadRes.json() as { id: string };
-      ctx.emit('llamaparse:uploaded', { jobId });
-
-      // ── 2. Poll ────────────────────────────────────────────────────
-      const deadline = Date.now() + timeoutMs;
-      while (Date.now() < deadline) {
-        const statusRes = await fetch(`${apiBase}/api/parsing/job/${jobId}`, {
-          headers: { Authorization: `Bearer ${apiKey}` },
+      // ── Register on-demand extraction handler ──────────────────────
+      // Closes over pdf + api config. Called by .markdown() on cache miss.
+      const extractHandler = async (pages: number[]): Promise<{ tags: Tag[]; markdownPages: MarkdownPage[] }> => {
+        const pageSpec = pages.join(',');
+        ctx.emit('llamaparse:extract', { pages: pageSpec });
+        const json = await uploadAndParse(config.pdf, {
+          apiKey: apiKey!,
+          apiBase,
+          pollIntervalMs,
+          timeoutMs,
+          targetPages: pageSpec,
+          takeScreenshot,
+          emit: ctx.emit,
         });
-        if (!statusRes.ok) throw new Error(`llamaparse status check failed: ${statusRes.status}`);
-        const { status } = await statusRes.json() as { status: string };
-        if (status === 'SUCCESS') break;
-        if (status === 'ERROR') throw new Error('llamaparse: job failed');
-        await sleep(pollIntervalMs);
+        const result = processJsonResult(json, ctx, { includeWordOcr, includeLayout });
+
+        // Inject tags back into session via add:tags callback
+        const addTags = ctx.artifacts.get(ARTIFACT_KEYS.ADD_TAGS) as ((tags: Tag[]) => void) | undefined;
+        if (addTags && result.tags.length > 0) {
+          addTags(result.tags);
+        }
+
+        // Return markdown pages from this extraction
+        const mdPages = (ctx.artifacts.get(ARTIFACT_KEYS.MARKDOWN_PAGES) as MarkdownPage[] | undefined) ?? [];
+        return { tags: result.tags, markdownPages: mdPages.filter(mp => pages.includes(mp.page)) };
+      };
+      ctx.artifacts.set(ARTIFACT_KEYS.EXTRACT_PAGES, extractHandler);
+
+      // ── Eager extraction (unless lazy) ─────────────────────────────
+      if (targetPages === 'lazy') {
+        // Lazy mode: register handler only, don't extract anything yet
+        ctx.emit('llamaparse:lazy', { message: 'handler registered, extraction deferred to .markdown()' });
+        return { tags: [] };
       }
-      if (Date.now() >= deadline) throw new Error('llamaparse: timeout waiting for job');
 
-      // ── 3. Fetch JSON result ───────────────────────────────────────
-      const resultRes = await fetch(`${apiBase}/api/parsing/job/${jobId}/result/json`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
+      const json = await uploadAndParse(config.pdf, {
+        apiKey: apiKey!,
+        apiBase,
+        pollIntervalMs,
+        timeoutMs,
+        targetPages,
+        takeScreenshot,
+        emit: ctx.emit,
       });
-      if (!resultRes.ok) throw new Error(`llamaparse result fetch failed: ${resultRes.status}`);
-      const json = await resultRes.json() as LPJsonResult;
 
-      // ── 4. Process pages ───────────────────────────────────────────
       return processJsonResult(json, ctx, { includeWordOcr, includeLayout });
     },
   };
-
-  // Separated so tests can call processJsonResult directly with fixtures
 }
 
 /**

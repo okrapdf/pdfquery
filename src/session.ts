@@ -223,6 +223,13 @@ export class PDFQuerySession {
    */
   async load(): Promise<this> {
     this._loadMode = true;
+
+    // Register add:tags callback so plugins/query methods can inject tags post-load
+    this.artifacts.set('add:tags', (newTags: Tag[]) => {
+      this.tags.push(...newTags);
+      this.recompile();
+    });
+
     const allPlugins = [...getGlobalPlugins(), ...this.plugins];
     if (allPlugins.length === 0) return this;
 
