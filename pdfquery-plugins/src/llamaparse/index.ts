@@ -291,19 +291,28 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
       // ── Register markdown:call handler ─────────────────────────────
       // Extends QueryResult.markdown() — owns cache check + deferred extraction.
       // Same pattern as vlmOpenRouter setting vlm:call.
+      /** Accumulated markdown cache (survives multiple calls — processJsonResult replaces artifact) */
+      const mdCache = new Map<number, string>();
+
       const markdownHandler = async (pages: number[], opts: { force: boolean }): Promise<string | null> => {
-        // 1. Check markdown:pages cache
+        // 1. Check local cache
         if (!opts.force) {
-          const mdPages = (ctx.artifacts.get(ARTIFACT_KEYS.MARKDOWN_PAGES) as MarkdownPage[] | undefined) ?? [];
-          const matched = mdPages.filter(mp => pages.includes(mp.page));
-          if (matched.length > 0) {
-            return matched.map(mp => mp.markdown).join('\n\n');
+          const cached = pages.map(p => mdCache.get(p)).filter(Boolean) as string[];
+          if (cached.length === pages.length) {
+            return cached.join('\n\n');
           }
         }
 
-        // 2. On-demand extraction for missing pages
-        const pageSpec = pages.join(',');
-        ctx.emit('llamaparse:extract', { pages: pageSpec });
+        // 2. Determine which pages are missing from cache
+        const missing = opts.force ? pages : pages.filter(p => !mdCache.has(p));
+        if (missing.length === 0) {
+          return pages.map(p => mdCache.get(p)!).join('\n\n');
+        }
+
+        // 3. On-demand extraction for missing pages
+        // LlamaParse target_pages is 0-indexed; our pages are 1-indexed
+        const pageSpec = missing.map(p => p - 1).join(',');
+        ctx.emit('llamaparse:extract', { pages: missing.join(',') });
         const json = await uploadAndParse(config.pdf, {
           apiKey: apiKey!,
           apiBase,
@@ -321,10 +330,28 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
           addTags(result.tags);
         }
 
-        // Return markdown from this extraction
+        // 4. Update local cache from artifacts (processJsonResult sets MARKDOWN_PAGES)
         const mdPages = (ctx.artifacts.get(ARTIFACT_KEYS.MARKDOWN_PAGES) as MarkdownPage[] | undefined) ?? [];
-        const matched = mdPages.filter(mp => pages.includes(mp.page));
-        return matched.length > 0 ? matched.map(mp => mp.markdown).join('\n\n') : null;
+        for (const mp of mdPages) {
+          if (mp.markdown) mdCache.set(mp.page, mp.markdown);
+        }
+
+        // 5. Also build markdown from page items if page.md was empty
+        // (LlamaParse sometimes omits top-level md but has items)
+        for (const page of (json as LPJsonResult).pages) {
+          const pageNum = page.page;
+          if (!mdCache.has(pageNum) && page.items?.length > 0) {
+            const itemMd = page.items
+              .map(item => item.md || item.value || '')
+              .filter(Boolean)
+              .join('\n\n');
+            if (itemMd) mdCache.set(pageNum, itemMd);
+          }
+        }
+
+        // Return requested pages
+        const results = pages.map(p => mdCache.get(p)).filter(Boolean) as string[];
+        return results.length > 0 ? results.join('\n\n') : null;
       };
       ctx.artifacts.set('markdown:call', markdownHandler);
 
