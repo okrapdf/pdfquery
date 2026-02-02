@@ -103,10 +103,10 @@ export function pageIndex(config: PageIndexConfig): PDFQueryPlugin {
 
       if (config.pdf.type === 'path') {
         const data = await readFile(config.pdf.path);
-        fileBlob = new Blob([data], { type: 'application/pdf' });
+        fileBlob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
         fileName = config.pdf.path.split('/').pop() || 'document.pdf';
       } else {
-        fileBlob = new Blob([config.pdf.data], { type: 'application/pdf' });
+        fileBlob = new Blob([new Uint8Array(config.pdf.data)], { type: 'application/pdf' });
         fileName = config.pdf.fileName || 'document.pdf';
       }
       formData.append('file', fileBlob, fileName);

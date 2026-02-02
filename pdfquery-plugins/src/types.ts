@@ -19,6 +19,8 @@ export const ARTIFACT_KEYS = {
   PAGE_IMAGES: 'pages:images',
   /** OcrPage[] — structured OCR output per page, set by OCR */
   OCR_PAGES: 'ocr:pages',
+  /** MarkdownPage[] — per-page markdown, set by LlamaParse / VLM markdown plugins */
+  MARKDOWN_PAGES: 'markdown:pages',
 } as const;
 
 export type ArtifactKey = typeof ARTIFACT_KEYS[keyof typeof ARTIFACT_KEYS];

@@ -109,7 +109,7 @@ export function okraOcr(config: OkraOcrConfig): PDFQueryPlugin {
 
         // Upload via public upload endpoint
         const formData = new FormData();
-        formData.append('file', new Blob([fileData], { type: 'application/pdf' }), fileName);
+        formData.append('file', new Blob([new Uint8Array(fileData)], { type: 'application/pdf' }), fileName);
 
         const uploadRes = await fetch(`${apiBase}/api/public/upload`, {
           method: 'POST',

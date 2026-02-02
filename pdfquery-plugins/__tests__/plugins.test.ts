@@ -12,7 +12,9 @@ import {
   fromAdapterResult,
   highlightRegion,
   cropImage,
+  processJsonResult,
 } from '../src';
+import type { MarkdownPage } from '../src';
 import type { OcrPage, PageImage } from '../src/types';
 
 // ============================================================================
@@ -580,7 +582,7 @@ describe('vlm() with images from source plugin', () => {
     ];
 
     // Consumer-side renderOverlay logic
-    let buf = Buffer.from(pageImg.data);
+    let buf: Buffer<ArrayBufferLike> = Buffer.from(pageImg.data);
     for (const sel of selections) {
       const css = sel.getCss();
       for (const el of sel.elements) {
@@ -1182,5 +1184,185 @@ describe('multi-source overlapping tags (OCR + VLM bbox detect)', () => {
     expect(stats.get('table')).toBe(3);
     expect(stats.get('figure')).toBe(2);
     expect(stats.get('ocr')).toBe(1);
+  });
+});
+
+// ============================================================================
+// LlamaParse processJsonResult — fixture-based tests (no API)
+// ============================================================================
+
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+function loadFixture(name: string) {
+  return JSON.parse(readFileSync(join(__dirname, '../src/llamaparse/fixtures', name), 'utf-8'));
+}
+
+function fakeCtx() {
+  const events: Array<{ event: string; data?: unknown }> = [];
+  return {
+    emit: (event: string, data?: unknown) => events.push({ event, data }),
+    artifacts: new Map<string, unknown>(),
+    events,
+  };
+}
+
+describe('LlamaParse processJsonResult (fixture: narrative page)', () => {
+  const fixture = loadFixture('tsla-page6-json.json');
+
+  it('produces tags from items[]', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    expect(tags.length).toBeGreaterThan(0);
+    // Fixture has 10 items: 4 headings + 6 text blocks
+    const headings = tags.filter(t => t.type === 'heading');
+    const ocr = tags.filter(t => t.type === 'ocr');
+    expect(headings.length).toBe(4); // FINANCIAL SUMMARY, Revenue, Profitability, Cash
+    expect(ocr.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('headings have level and text', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    const h = tags.find(t => t.type === 'heading' && t.text === 'FINANCIAL SUMMARY');
+    expect(h).toBeDefined();
+    expect(h!.attrs?.level).toBe(1);
+    expect(h!.attrs?.source).toBe('llamaparse');
+  });
+
+  it('bboxes are normalized 0-1', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    for (const tag of tags) {
+      expect(tag.bbox.x).toBeGreaterThanOrEqual(0);
+      expect(tag.bbox.x).toBeLessThanOrEqual(1);
+      expect(tag.bbox.y).toBeGreaterThanOrEqual(0);
+      expect(tag.bbox.y).toBeLessThanOrEqual(1);
+      expect(tag.bbox.width).toBeGreaterThanOrEqual(0);
+      expect(tag.bbox.width).toBeLessThanOrEqual(1);
+      expect(tag.bbox.height).toBeGreaterThanOrEqual(0);
+      expect(tag.bbox.height).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('sets markdown:pages artifact', () => {
+    const ctx = fakeCtx();
+    processJsonResult(fixture, ctx);
+    const mdPages = ctx.artifacts.get(ARTIFACT_KEYS.MARKDOWN_PAGES) as MarkdownPage[];
+    expect(mdPages).toBeDefined();
+    expect(mdPages.length).toBe(1);
+    expect(mdPages[0].markdown).toContain('FINANCIAL SUMMARY');
+    expect(mdPages[0].markdown).toContain('Revenue');
+  });
+
+  it('sets ocr:pages artifact', () => {
+    const ctx = fakeCtx();
+    processJsonResult(fixture, ctx);
+    const ocrPages = ctx.artifacts.get(ARTIFACT_KEYS.OCR_PAGES) as OcrPage[];
+    expect(ocrPages).toBeDefined();
+    expect(ocrPages.length).toBe(1);
+    expect(ocrPages[0].blocks.length).toBeGreaterThan(0);
+  });
+
+  it('emits llamaparse:complete event', () => {
+    const ctx = fakeCtx();
+    processJsonResult(fixture, ctx);
+    const complete = ctx.events.find(e => e.event === 'llamaparse:complete');
+    expect(complete).toBeDefined();
+    expect((complete!.data as any).tags).toBeGreaterThan(0);
+  });
+});
+
+describe('LlamaParse processJsonResult (fixture: table page)', () => {
+  const fixture = loadFixture('tsla-page8-json.json');
+
+  it('detects the vehicle capacity table', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    const tables = tags.filter(t => t.type === 'table');
+    expect(tables.length).toBe(1);
+  });
+
+  it('table tag has rows, csv, isPerfectTable in attrs', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    const table = tags.find(t => t.type === 'table')!;
+    expect(table.attrs?.rows).toBeDefined();
+    expect((table.attrs!.rows as string[][]).length).toBe(10); // header + 9 data rows
+    expect((table.attrs!.rows as string[][])[0]).toEqual(['Region', 'Model', 'Capacity', 'Status']);
+    expect(table.attrs?.csv).toContain('California');
+    expect(table.attrs?.isPerfectTable).toBe(true);
+    expect(table.attrs?.markdown).toContain('| Region');
+  });
+
+  it('table text is the markdown representation', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    const table = tags.find(t => t.type === 'table')!;
+    expect(table.text).toContain('| Region');
+    expect(table.text).toContain('California');
+  });
+
+  it('table bbox is properly normalized from PDF points', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    const table = tags.find(t => t.type === 'table')!;
+    // PDF points: x=46.68, y=9.17, w=527.19, h=466.79 on 612x792 page
+    expect(table.bbox.x).toBeCloseTo(46.68 / 612, 2);
+    expect(table.bbox.y).toBeCloseTo(9.17 / 792, 2);
+    expect(table.bbox.width).toBeCloseTo(527.19 / 612, 2);
+    expect(table.bbox.height).toBeCloseTo(466.79 / 792, 2);
+  });
+
+  it('has headings: AUTOMOTIVE, Vehicle Capacity, APAC, Europe', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx);
+    const headings = tags.filter(t => t.type === 'heading').map(t => t.text);
+    expect(headings).toContain('AUTOMOTIVE');
+    expect(headings).toContain('Current Installed Annual Vehicle Capacity');
+    expect(headings).toContain('APAC: Shanghai');
+    expect(headings).toContain('Europe and the Middle East: Berlin-Brandenburg');
+  });
+
+  it('layout[] dedupes picture that overlaps item bbox (table)', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx, { includeLayout: true });
+    // The layout has a picture at (0.55, 0.40) but it falls inside the table
+    // item bbox (~0.08-0.94, 0.01-0.60), so it should be deduped
+    const figures = tags.filter(t => t.type === 'figure');
+    expect(figures.length).toBe(0);
+  });
+
+  it('includeLayout:false skips layout-only tags', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx, { includeLayout: false });
+    const layoutTags = tags.filter(t => t.attrs?.source === 'llamaparse-layout');
+    expect(layoutTags.length).toBe(0);
+  });
+
+  it('includeWordOcr adds word-level tags from embedded image', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx, { includeWordOcr: true });
+    const ocrWords = tags.filter(t => t.attrs?.source === 'llamaparse-ocr');
+    expect(ocrWords.length).toBeGreaterThan(0);
+    // Should have text from the image OCR
+    const texts = ocrWords.map(t => t.text);
+    expect(texts.some(t => t?.includes('AUTOMOTIVE'))).toBe(true);
+  });
+
+  it('includeWordOcr:false (default) skips word-level OCR', () => {
+    const ctx = fakeCtx();
+    const { tags } = processJsonResult(fixture, ctx, { includeWordOcr: false });
+    const ocrWords = tags.filter(t => t.attrs?.source === 'llamaparse-ocr');
+    expect(ocrWords.length).toBe(0);
+  });
+
+  it('page markdown contains the table in markdown format', () => {
+    const ctx = fakeCtx();
+    processJsonResult(fixture, ctx);
+    const mdPages = ctx.artifacts.get(ARTIFACT_KEYS.MARKDOWN_PAGES) as MarkdownPage[];
+    expect(mdPages[0].markdown).toContain('| Region');
+    expect(mdPages[0].markdown).toContain('AUTOMOTIVE');
+    expect(mdPages[0].markdown).toContain('Cybertruck');
   });
 });

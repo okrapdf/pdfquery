@@ -1,0 +1,841 @@
+{
+  "pages": [
+    {
+      "page": 7,
+      "text": "£\n\nFINANCIAL SUMMARY\n\nRevenue     Total revenue decreased 9% YoY to $19.3B. YoY, revenue was impacted by the following items:\n\n           - decline in vehicle deliveries, in part due to the Model Y update across all four vehicle factories\n           - reduced vehicle average selling price (ASP) (excl. FX impact²), due to mix and sales incentives\n           - negative FX impact of $0.3B1\n            + growth in Energy Generation and Storage and Services and Other\n            + higher regulatory credit revenue\n\nProfitability     Our operating income decreased 66% YoY to $0.4B, resulting in a 2.1% operating margin. YoY, operating income was primarily impacted\n                  by the following items:\n\n                  - reduced vehicle ASP\n                 - decline in vehicle deliveries\n                 - increase in operating expenses driven by Al and other R&D projects partially offset by a decrease in SG&A\n                  + growth in Energy Generation and Storage gross profit\n                 + lower cost associated with Cybertruck production ramp in Q1'24\n                  + lower cost per vehicle, including lower raw material costs partially offset by lower fixed cost absorption primarily from Model Y production\n                  decrease YoY\n                  + higher regulatory credit revenue\n\nCash     Quarter-end cash, cash equivalents and investments was $37.0B. The sequential increase of $0.4B was primarily the result of positive free cash\n         flow of $0.7B.\n\npact is calculated n a constant currency bass.Actuals are compare agains current results converted into USD using averag exchange rates from Q1'24.",
+      "md": "\n# FINANCIAL SUMMARY\n\n# Revenue\n\nTotal revenue decreased 9% YoY to $19.3B. YoY, revenue was impacted by the following items:\n\n- decline in vehicle deliveries, in part due to the Model Y update across all four vehicle factories\n- reduced vehicle average selling price (ASP) (excl. FX impact²), due to mix and sales incentives\n- negative FX impact of $0.3B1\n- growth in Energy Generation and Storage and Services and Other\n- higher regulatory credit revenue\n\n# Profitability\n\nOur operating income decreased 66% YoY to $0.4B, resulting in a 2.1% operating margin. YoY, operating income was primarily impacted by the following items:\n\n- reduced vehicle ASP\n- decline in vehicle deliveries\n- increase in operating expenses driven by AI and other R&#x26;D projects partially offset by a decrease in SG&#x26;A\n- growth in Energy Generation and Storage gross profit\n- lower cost associated with Cybertruck production ramp in Q1'24\n- lower cost per vehicle, including lower raw material costs partially offset by lower fixed cost absorption primarily from Model Y production decrease YoY\n- higher regulatory credit revenue\n\n# Cash\n\nQuarter-end cash, cash equivalents and investments was $37.0B. The sequential increase of $0.4B was primarily the result of positive free cash flow of $0.7B.\n\npact is calculated n a constant currency bass. Actuals are compare agains current results converted into USD using averag exchange rates from Q1'24.\n\n",
+      "images": [
+        {
+          "name": "img_p6_1.jpg",
+          "height": 442.584,
+          "width": 573.399,
+          "x": 23.581,
+          "y": 39.14,
+          "original_width": 1365,
+          "original_height": 768,
+          "rotation": 0,
+          "ocr": [
+            {
+              "x": 57,
+              "y": 727,
+              "w": 790,
+              "h": 18,
+              "confidence": 0.78,
+              "text": "pact is calculated n a constant currency bass.Actuals are compare agains current results converted into USD using averag exchange rates from Q1'24."
+            },
+            {
+              "x": 260,
+              "y": 649,
+              "w": 91,
+              "h": 15,
+              "confidence": 0.989,
+              "text": "flow of $0.7B."
+            },
+            {
+              "x": 260,
+              "y": 625,
+              "w": 916,
+              "h": 19,
+              "confidence": 0.987,
+              "text": "Quarter-end cash, cash equivalents and investments was $37.0B. The sequential increase of $0.4B was primarily the result of positive free cash"
+            },
+            {
+              "x": 58,
+              "y": 624,
+              "w": 36,
+              "h": 17,
+              "confidence": 1,
+              "text": "Cash"
+            },
+            {
+              "x": 259,
+              "y": 553,
+              "w": 224,
+              "h": 19,
+              "confidence": 0.993,
+              "text": "+ higher regulatory credit revenue"
+            },
+            {
+              "x": 259,
+              "y": 531,
+              "w": 88,
+              "h": 15,
+              "confidence": 0.949,
+              "text": "decrease YoY"
+            },
+            {
+              "x": 260,
+              "y": 511,
+              "w": 899,
+              "h": 14,
+              "confidence": 0.992,
+              "text": "+ lower cost per vehicle, including lower raw material costs partially offset by lower fixed cost absorption primarily from Model Y production"
+            },
+            {
+              "x": 257,
+              "y": 484,
+              "w": 428,
+              "h": 19,
+              "confidence": 0.986,
+              "text": "+ lower cost associated with Cybertruck production ramp in Q1'24"
+            },
+            {
+              "x": 259,
+              "y": 464,
+              "w": 358,
+              "h": 19,
+              "confidence": 0.988,
+              "text": "+ growth in Energy Generation and Storage gross profit"
+            },
+            {
+              "x": 257,
+              "y": 442,
+              "w": 690,
+              "h": 18,
+              "confidence": 0.978,
+              "text": "- increase in operating expenses driven by Al and other R&D projects partially offset by a decrease in SG&A"
+            },
+            {
+              "x": 256,
+              "y": 419,
+              "w": 192,
+              "h": 19,
+              "confidence": 0.984,
+              "text": "- decline in vehicle deliveries"
+            },
+            {
+              "x": 259,
+              "y": 397,
+              "w": 142,
+              "h": 18,
+              "confidence": 0.98,
+              "text": "- reduced vehicle ASP"
+            },
+            {
+              "x": 260,
+              "y": 353,
+              "w": 149,
+              "h": 18,
+              "confidence": 1,
+              "text": "by the following items:"
+            },
+            {
+              "x": 260,
+              "y": 330,
+              "w": 872,
+              "h": 19,
+              "confidence": 0.988,
+              "text": "Our operating income decreased 66% YoY to $0.4B, resulting in a 2.1% operating margin. YoY, operating income was primarily impacted"
+            },
+            {
+              "x": 58,
+              "y": 328,
+              "w": 83,
+              "h": 19,
+              "confidence": 0.979,
+              "text": "Profitability"
+            },
+            {
+              "x": 260,
+              "y": 263,
+              "w": 222,
+              "h": 14,
+              "confidence": 0.987,
+              "text": "+ higher regulatory credit revenue"
+            },
+            {
+              "x": 260,
+              "y": 240,
+              "w": 431,
+              "h": 14,
+              "confidence": 0.99,
+              "text": "+ growth in Energy Generation and Storage and Services and Other"
+            },
+            {
+              "x": 257,
+              "y": 215,
+              "w": 199,
+              "h": 18,
+              "confidence": 0.99,
+              "text": "- negative FX impact of $0.3B1"
+            },
+            {
+              "x": 257,
+              "y": 192,
+              "w": 609,
+              "h": 18,
+              "confidence": 0.978,
+              "text": "- reduced vehicle average selling price (ASP) (excl. FX impact²), due to mix and sales incentives"
+            },
+            {
+              "x": 257,
+              "y": 169,
+              "w": 616,
+              "h": 19,
+              "confidence": 0.991,
+              "text": "- decline in vehicle deliveries, in part due to the Model Y update across all four vehicle factories"
+            },
+            {
+              "x": 259,
+              "y": 126,
+              "w": 611,
+              "h": 18,
+              "confidence": 0.994,
+              "text": "Total revenue decreased 9% YoY to $19.3B. YoY, revenue was impacted by the following items:"
+            },
+            {
+              "x": 58,
+              "y": 126,
+              "w": 61,
+              "h": 15,
+              "confidence": 1,
+              "text": "Revenue"
+            },
+            {
+              "x": 60,
+              "y": 65,
+              "w": 199,
+              "h": 18,
+              "confidence": 1,
+              "text": "FINANCIAL SUMMARY"
+            }
+          ]
+        },
+        {
+          "name": "page_7.jpg",
+          "height": 792,
+          "width": 612,
+          "x": 0,
+          "y": 0,
+          "original_width": 1236,
+          "original_height": 1600,
+          "rotation": 0,
+          "type": "full_page_screenshot"
+        },
+        {
+          "name": "page_7_listItem_1.jpg",
+          "height": 9.739,
+          "width": 149.706,
+          "x": 132.709,
+          "y": 308.549,
+          "original_width": 302,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_2.jpg",
+          "height": 9.975,
+          "width": 289.59,
+          "x": 132.551,
+          "y": 295.348,
+          "original_width": 584,
+          "original_height": 20,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_3.jpg",
+          "height": 9.797,
+          "width": 181.724,
+          "x": 132.533,
+          "y": 177.603,
+          "original_width": 367,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_4.jpg",
+          "height": 9.593,
+          "width": 93.561,
+          "x": 132.62,
+          "y": 190.356,
+          "original_width": 188,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_5.jpg",
+          "height": 21.656,
+          "width": 378.571,
+          "x": 132.719,
+          "y": 334.05,
+          "original_width": 764,
+          "original_height": 43,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_6.jpg",
+          "height": 9.527,
+          "width": 254.832,
+          "x": 132.187,
+          "y": 151.951,
+          "original_width": 514,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_7.jpg",
+          "height": 9.37,
+          "width": 179.125,
+          "x": 132.822,
+          "y": 321.169,
+          "original_width": 361,
+          "original_height": 18,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_8.jpg",
+          "height": 9.806,
+          "width": 81.696,
+          "x": 132.077,
+          "y": 164.696,
+          "original_width": 164,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_9.jpg",
+          "height": 9.556,
+          "width": 258.319,
+          "x": 131.864,
+          "y": 138.809,
+          "original_width": 521,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_text_1.jpg",
+          "height": 9.116,
+          "width": 256.662,
+          "x": 132.286,
+          "y": 113.311,
+          "original_width": 518,
+          "original_height": 18,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_7_text_2.jpg",
+          "height": 22.667,
+          "width": 366.479,
+          "x": 132.782,
+          "y": 230.76,
+          "original_width": 740,
+          "original_height": 45,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_7_listItem_10.jpg",
+          "height": 9.68,
+          "width": 93.985,
+          "x": 132.439,
+          "y": 359.894,
+          "original_width": 189,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_listItem_11.jpg",
+          "height": 8.555,
+          "width": 79.235,
+          "x": 131.99,
+          "y": 282.622,
+          "original_width": 160,
+          "original_height": 17,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_sectionHeader_1.jpg",
+          "height": 7.434,
+          "width": 24.359,
+          "x": 48.612,
+          "y": 112.423,
+          "original_width": 49,
+          "original_height": 15,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_7_listItem_12.jpg",
+          "height": 8.306,
+          "width": 59.825,
+          "x": 132.116,
+          "y": 269.735,
+          "original_width": 120,
+          "original_height": 16,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_text_3.jpg",
+          "height": 21.761,
+          "width": 385.295,
+          "x": 132.865,
+          "y": 401.509,
+          "original_width": 778,
+          "original_height": 43,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_7_sectionHeader_2.jpg",
+          "height": 9.311,
+          "width": 33.328,
+          "x": 48.561,
+          "y": 229.77,
+          "original_width": 67,
+          "original_height": 18,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_7_sectionHeader_3.jpg",
+          "height": 7.91,
+          "width": 83.521,
+          "x": 48.99,
+          "y": 78.655,
+          "original_width": 168,
+          "original_height": 15,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_7_listItem_13.jpg",
+          "height": 8.322,
+          "width": 339.228,
+          "x": 39.96,
+          "y": 460.016,
+          "original_width": 685,
+          "original_height": 16,
+          "rotation": 0,
+          "type": "layout_listItem"
+        },
+        {
+          "name": "page_7_text_4.jpg",
+          "height": 7.713,
+          "width": 14.247,
+          "x": 48.326,
+          "y": 400.317,
+          "original_width": 28,
+          "original_height": 15,
+          "rotation": 0,
+          "type": "layout_text"
+        }
+      ],
+      "charts": [],
+      "items": [
+        {
+          "type": "heading",
+          "md": "# FINANCIAL SUMMARY",
+          "value": "FINANCIAL SUMMARY",
+          "lvl": 1,
+          "bBox": {
+            "x": 48.79,
+            "y": 76.6,
+            "w": 83.59,
+            "h": 10.37,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "heading",
+          "md": "# Revenue",
+          "value": "Revenue",
+          "lvl": 1,
+          "bBox": {
+            "x": 47.95,
+            "y": 111.75,
+            "w": 25.62,
+            "h": 8.64,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "text",
+          "md": "Total revenue decreased 9% YoY to $19.3B. YoY, revenue was impacted by the following items:",
+          "value": "Total revenue decreased 9% YoY to $19.3B. YoY, revenue was impacted by the following items:",
+          "bBox": {
+            "x": 132.38,
+            "y": 111.75,
+            "w": 256.66,
+            "h": 10.37,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "text",
+          "md": "- decline in vehicle deliveries, in part due to the Model Y update across all four vehicle factories\n- reduced vehicle average selling price (ASP) (excl. FX impact²), due to mix and sales incentives\n- negative FX impact of $0.3B1\n- growth in Energy Generation and Storage and Services and Other\n- higher regulatory credit revenue",
+          "value": "- decline in vehicle deliveries, in part due to the Model Y update across all four vehicle factories\n- reduced vehicle average selling price (ASP) (excl. FX impact²), due to mix and sales incentives\n- negative FX impact of $0.3B1\n- growth in Energy Generation and Storage and Services and Other\n- higher regulatory credit revenue",
+          "bBox": {
+            "x": 47.95,
+            "y": 111.75,
+            "w": 342.36,
+            "h": 61.66,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "heading",
+          "md": "# Profitability",
+          "value": "Profitability",
+          "lvl": 1,
+          "bBox": {
+            "x": 47.95,
+            "y": 228.16,
+            "w": 34.87,
+            "h": 10.95,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "text",
+          "md": "Our operating income decreased 66% YoY to $0.4B, resulting in a 2.1% operating margin. YoY, operating income was primarily impacted by the following items:",
+          "value": "Our operating income decreased 66% YoY to $0.4B, resulting in a 2.1% operating margin. YoY, operating income was primarily impacted by the following items:",
+          "bBox": {
+            "x": 132.8,
+            "y": 229.31,
+            "w": 366.3,
+            "h": 23.63,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "text",
+          "md": "- reduced vehicle ASP\n- decline in vehicle deliveries\n- increase in operating expenses driven by AI and other R&#x26;D projects partially offset by a decrease in SG&#x26;A\n- growth in Energy Generation and Storage gross profit\n- lower cost associated with Cybertruck production ramp in Q1'24\n- lower cost per vehicle, including lower raw material costs partially offset by lower fixed cost absorption primarily from Model Y production decrease YoY\n- higher regulatory credit revenue",
+          "value": "- reduced vehicle ASP\n- decline in vehicle deliveries\n- increase in operating expenses driven by AI and other R&#x26;D projects partially offset by a decrease in SG&#x26;A\n- growth in Energy Generation and Storage gross profit\n- lower cost associated with Cybertruck production ramp in Q1'24\n- lower cost per vehicle, including lower raw material costs partially offset by lower fixed cost absorption primarily from Model Y production decrease YoY\n- higher regulatory credit revenue",
+          "bBox": {
+            "x": 47.95,
+            "y": 111.75,
+            "w": 163.83,
+            "h": 242.04,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "heading",
+          "md": "# Cash",
+          "value": "Cash",
+          "lvl": 1,
+          "bBox": {
+            "x": 47.95,
+            "y": 398.74,
+            "w": 15.12,
+            "h": 9.8,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "text",
+          "md": "Quarter-end cash, cash equivalents and investments was $37.0B. The sequential increase of $0.4B was primarily the result of positive free cash flow of $0.7B.",
+          "value": "Quarter-end cash, cash equivalents and investments was $37.0B. The sequential increase of $0.4B was primarily the result of positive free cash flow of $0.7B.",
+          "bBox": {
+            "x": 132.8,
+            "y": 399.32,
+            "w": 384.79,
+            "h": 22.47,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "text",
+          "md": "pact is calculated n a constant currency bass. Actuals are compare agains current results converted into USD using averag exchange rates from Q1'24.",
+          "value": "pact is calculated n a constant currency bass. Actuals are compare agains current results converted into USD using averag exchange rates from Q1'24.",
+          "bBox": {
+            "x": 47.53,
+            "y": 458.1,
+            "w": 331.86,
+            "h": 10.37,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        }
+      ],
+      "status": "OK",
+      "originalOrientationAngle": 0,
+      "links": [],
+      "width": 612,
+      "height": 792,
+      "triggeredAutoMode": false,
+      "parsingMode": "accurate",
+      "structuredData": null,
+      "noStructuredContent": false,
+      "noTextContent": false,
+      "pageHeaderMarkdown": "",
+      "pageFooterMarkdown": "",
+      "printedPageNumber": "",
+      "slideSpeakerNotes": null,
+      "slideSectionName": null,
+      "confidence": 0.996,
+      "layout": [
+        {
+          "image": "page_7_listItem_1.jpg",
+          "confidence": 0.876,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.389,
+            "w": 0.244,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_2.jpg",
+          "confidence": 0.869,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.372,
+            "w": 0.473,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_3.jpg",
+          "confidence": 0.869,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.224,
+            "w": 0.296,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_4.jpg",
+          "confidence": 0.866,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.24,
+            "w": 0.152,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_5.jpg",
+          "confidence": 0.861,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.421,
+            "w": 0.618,
+            "h": 0.027
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_6.jpg",
+          "confidence": 0.85,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.215,
+            "y": 0.191,
+            "w": 0.416,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_7.jpg",
+          "confidence": 0.85,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.217,
+            "y": 0.405,
+            "w": 0.292,
+            "h": 0.011
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_8.jpg",
+          "confidence": 0.847,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.215,
+            "y": 0.207,
+            "w": 0.133,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_9.jpg",
+          "confidence": 0.846,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.215,
+            "y": 0.175,
+            "w": 0.422,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_text_1.jpg",
+          "confidence": 0.841,
+          "label": "text",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.143,
+            "w": 0.419,
+            "h": 0.011
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_text_2.jpg",
+          "confidence": 0.841,
+          "label": "text",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.291,
+            "w": 0.598,
+            "h": 0.028
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_10.jpg",
+          "confidence": 0.838,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.216,
+            "y": 0.454,
+            "w": 0.153,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_11.jpg",
+          "confidence": 0.826,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.215,
+            "y": 0.356,
+            "w": 0.129,
+            "h": 0.01
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_sectionHeader_1.jpg",
+          "confidence": 0.811,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.079,
+            "y": 0.141,
+            "w": 0.039,
+            "h": 0.009
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_12.jpg",
+          "confidence": 0.785,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.215,
+            "y": 0.34,
+            "w": 0.097,
+            "h": 0.01
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_text_3.jpg",
+          "confidence": 0.772,
+          "label": "text",
+          "bbox": {
+            "x": 0.217,
+            "y": 0.506,
+            "w": 0.629,
+            "h": 0.027
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_sectionHeader_2.jpg",
+          "confidence": 0.75,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.079,
+            "y": 0.29,
+            "w": 0.054,
+            "h": 0.011
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_sectionHeader_3.jpg",
+          "confidence": 0.683,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.08,
+            "y": 0.099,
+            "w": 0.136,
+            "h": 0.009
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_listItem_13.jpg",
+          "confidence": 0.679,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.065,
+            "y": 0.58,
+            "w": 0.554,
+            "h": 0.01
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_7_text_4.jpg",
+          "confidence": 0.536,
+          "label": "text",
+          "bbox": {
+            "x": 0.078,
+            "y": 0.505,
+            "w": 0.023,
+            "h": 0.009
+          },
+          "isLikelyNoise": false
+        }
+      ],
+      "costOptimized": false
+    }
+  ],
+  "job_metadata": {
+    "credits_used": 0,
+    "job_credits_usage": 0,
+    "job_pages": 1,
+    "job_auto_mode_triggered_pages": 0,
+    "job_is_cache_hit": false
+  }
+}

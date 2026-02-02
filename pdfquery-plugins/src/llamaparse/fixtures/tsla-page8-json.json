@@ -1,0 +1,1379 @@
+{
+  "pages": [
+    {
+      "page": 9,
+      "text": "    £\n\n    AUTOMOTIVE\n\n                                                                                                                             Current Installed Annual Vehicle Capacity\n    As guided, switchover of production lines for the New Model Y resulted in several weeks of lost        Region         Model                                     Capacity    Status\n    production. During the switchover, we also prepared our factories for the launch of new models         California     Model S / Model X                               100,000  Production\n    later this year. Given economic uncertainty resulting from changing trade policy, more                                Model 3 / Model Y                         >550,000       Production\n    affordable options are as critical as ever.                                                            Shanghai       Model 3 / Model Y                         >950,000       Production\n\nUS: California, Nevada and Texas                                                                       Berlin         Model Y\nIn April, Gigafactory Texas produced its 400,oo0th vehicle and the team launched the Long Range       Texas           Model Y\nCybertruck with 362 miles of range, starting under $63k after incentives. Gigafactory Nevada                          Cybertruck\nachieved record battery pack production. Model 3 and Model Y deliveries in the U.S. are now                           Cybercab\nmade with 100% U.S.-built battery packs. We continued progress on the installation of lines for        Nevada         Tesla Semi\nTesla Semi in Nevada and the Cybercab in Texas. Both remain on track for volume production\nnext year.                                                                                             TBD           Roadster\n>375,000       Production\n>250,000       Production\n>125,000       Production\n              Construction\n              Construction\n\n               Design development\n\n    APAC: Shanghai                                                                                         Installed capacity = current production rate and there may be limitations discovered as production rates approach\n    We achieved record orders for a single day in the APAC region when we launched New Model Y.            downtime related to factory upgrades, regulatory considerations and other factors. Construction includes factory\n                                                                                                           and infrastructure buildout as well as tool installation.\n    This is significant given the region is the most competitive EV market and is also a validation of     4%        -US/Canada —Europe  —China\n    our cost structure and competitive positioning. While conventional wisdom is that competition\n    will be bad for Tesla, we have long believed that it accelerates broader EV adoption and is            3%\n    positive for our sales long-term. The Shanghai Model Y factory fully ramped production in six-         2%\n    weeks, our quickest ramp of any vehicle ever. We launched FSD (Supervised)² in China - the first\n    market outside of North America - with positive reception.                                             1%\n\n    Europe and the Middle East: Berlin-Brandenburg                                                         0%\n                                                                                                           02             a2\n                                                                                                                                               o22                        o2\n                                                                                                                                                                          2\n                                                                                                               020                    2                             a a\n                                                                                                                         Q220\n                                                                                                                          0 20                                      0 22           0122024\n                                                                                                           022019012200                  02 2020202                                024\n                                                                                                                                         0A 02                      022            0322024\n                                                                                                                                                                                                  022024\n    Gigafactory Berlin built its 500,o0oth Model Y. We recently began deliveries of Model 3 and                                                                                                   012225\n    Model Y and plan to begin deliveries of Cybertruck later this year in Saudi Arabia - the first                        Market share of Tesla vehicles by region (TTM)\n    Cybertruck market outside of North America. We continue to prepare for the launch of FSD               Source: Tesia estimates based on latest available data from ACEA; Autonews.com; CAAM -I\n    (Supervised) in Europe this year, pending regulatory approval.                                         hc Til   ob  f",
+      "md": "\n# AUTOMOTIVE\n\n# Current Installed Annual Vehicle Capacity\n\nAs guided, switchover of production lines for the New Model Y resulted in several weeks of lost production. During the switchover, we also prepared our factories for the launch of new models later this year. Given economic uncertainty resulting from changing trade policy, more affordable options are as critical as ever.\n\n| Region     | Model             | Capacity | Status       |\n| ---------- | ----------------- | -------- | ------------ |\n| California | Model S / Model X | 100,000  | Production   |\n|            | Model 3 / Model Y | >550,000 | Production   |\n| Shanghai   | Model 3 / Model Y | >950,000 | Production   |\n| Berlin     | Model Y           |          |              |\n| Texas      | Model Y           |          |              |\n|            | Cybertruck        | >375,000 | Production   |\n|            | Cybercab          | >250,000 | Production   |\n|            | Tesla Semi        | >125,000 | Production   |\n|            | Roadster          |          | Construction |\n\nIn April, Gigafactory Texas produced its 400,000th vehicle and the team launched the Long Range Cybertruck with 362 miles of range, starting under $63k after incentives. Gigafactory Nevada achieved record battery pack production. Model 3 and Model Y deliveries in the U.S. are now made with 100% U.S.-built battery packs. We continued progress on the installation of lines for Tesla Semi in Nevada and the Cybercab in Texas. Both remain on track for volume production next year.\n\n# APAC: Shanghai\n\nWe achieved record orders for a single day in the APAC region when we launched New Model Y. This is significant given the region is the most competitive EV market and is also a validation of our cost structure and competitive positioning. While conventional wisdom is that competition will be bad for Tesla, we have long believed that it accelerates broader EV adoption and is positive for our sales long-term. The Shanghai Model Y factory fully ramped production in six weeks, our quickest ramp of any vehicle ever. We launched FSD (Supervised)² in China - the first market outside of North America - with positive reception.\n\n# Europe and the Middle East: Berlin-Brandenburg\n\nGigafactory Berlin built its 500,000th Model Y. We recently began deliveries of Model 3 and Model Y and plan to begin deliveries of Cybertruck later this year in Saudi Arabia - the first Cybertruck market outside of North America. We continue to prepare for the launch of FSD (Supervised) in Europe this year, pending regulatory approval.\n\nMarket share of Tesla vehicles by region (TTM)\n4% - US/Canada\n3% - Europe\n2% - China\n1%\n0%\n\nSource: Tesla estimates based on latest available data from ACEA; Autonews.com; CAAM\n\n",
+      "images": [
+        {
+          "name": "img_p8_1.jpg",
+          "height": 442.584,
+          "width": 573.399,
+          "x": 23.581,
+          "y": 39.14,
+          "original_width": 1365,
+          "original_height": 768,
+          "rotation": 0,
+          "ocr": [
+            {
+              "x": 57,
+              "y": 737,
+              "w": 408,
+              "h": 21,
+              "confidence": 0.98,
+              "text": "(Supervised) in Europe this year, pending regulatory approval."
+            },
+            {
+              "x": 756,
+              "y": 734,
+              "w": 434,
+              "h": 20,
+              "confidence": 0.485,
+              "text": "hc Til   ob  f"
+            },
+            {
+              "x": 759,
+              "y": 723,
+              "w": 454,
+              "h": 14,
+              "confidence": 0.979,
+              "text": "Source: Tesia estimates based on latest available data from ACEA; Autonews.com; CAAM -I"
+            },
+            {
+              "x": 58,
+              "y": 717,
+              "w": 589,
+              "h": 19,
+              "confidence": 0.987,
+              "text": "Cybertruck market outside of North America. We continue to prepare for the launch of FSD"
+            },
+            {
+              "x": 867,
+              "y": 700,
+              "w": 317,
+              "h": 19,
+              "confidence": 0.98,
+              "text": "Market share of Tesla vehicles by region (TTM)"
+            },
+            {
+              "x": 60,
+              "y": 696,
+              "w": 583,
+              "h": 14,
+              "confidence": 0.988,
+              "text": "Model Y and plan to begin deliveries of Cybertruck later this year in Saudi Arabia - the first"
+            },
+            {
+              "x": 60,
+              "y": 672,
+              "w": 584,
+              "h": 18,
+              "confidence": 0.977,
+              "text": "Gigafactory Berlin built its 500,o0oth Model Y. We recently began deliveries of Model 3 and"
+            },
+            {
+              "x": 1253,
+              "y": 652,
+              "w": 44,
+              "h": 43,
+              "confidence": 0.614,
+              "text": "012225"
+            },
+            {
+              "x": 1186,
+              "y": 649,
+              "w": 47,
+              "h": 48,
+              "confidence": 0.508,
+              "text": "024"
+            },
+            {
+              "x": 948,
+              "y": 651,
+              "w": 44,
+              "h": 44,
+              "confidence": 0.488,
+              "text": "02 202"
+            },
+            {
+              "x": 923,
+              "y": 648,
+              "w": 51,
+              "h": 51,
+              "confidence": 0.444,
+              "text": "2"
+            },
+            {
+              "x": 900,
+              "y": 647,
+              "w": 51,
+              "h": 50,
+              "confidence": 0.459,
+              "text": " "
+            },
+            {
+              "x": 1233,
+              "y": 651,
+              "w": 42,
+              "h": 42,
+              "confidence": 0.535,
+              "text": "022024"
+            },
+            {
+              "x": 1210,
+              "y": 651,
+              "w": 44,
+              "h": 44,
+              "confidence": 0.585,
+              "text": "0322024"
+            },
+            {
+              "x": 1166,
+              "y": 649,
+              "w": 45,
+              "h": 46,
+              "confidence": 0.488,
+              "text": "0122024"
+            },
+            {
+              "x": 1142,
+              "y": 647,
+              "w": 51,
+              "h": 50,
+              "confidence": 0.241,
+              "text": "a "
+            },
+            {
+              "x": 1119,
+              "y": 647,
+              "w": 51,
+              "h": 50,
+              "confidence": 0.515,
+              "text": "2"
+            },
+            {
+              "x": 1097,
+              "y": 647,
+              "w": 51,
+              "h": 50,
+              "confidence": 0.308,
+              "text": "o2"
+            },
+            {
+              "x": 1075,
+              "y": 648,
+              "w": 51,
+              "h": 51,
+              "confidence": 0.301,
+              "text": "a"
+            },
+            {
+              "x": 1056,
+              "y": 651,
+              "w": 45,
+              "h": 44,
+              "confidence": 0.636,
+              "text": "022"
+            },
+            {
+              "x": 1034,
+              "y": 649,
+              "w": 46,
+              "h": 46,
+              "confidence": 0.524,
+              "text": "0 22"
+            },
+            {
+              "x": 1010,
+              "y": 647,
+              "w": 51,
+              "h": 50,
+              "confidence": 0.483,
+              "text": "o22"
+            },
+            {
+              "x": 990,
+              "y": 650,
+              "w": 47,
+              "h": 46,
+              "confidence": 0.489,
+              "text": "0202"
+            },
+            {
+              "x": 970,
+              "y": 651,
+              "w": 44,
+              "h": 44,
+              "confidence": 0.388,
+              "text": "0A 02"
+            },
+            {
+              "x": 880,
+              "y": 647,
+              "w": 51,
+              "h": 50,
+              "confidence": 0.328,
+              "text": "a2"
+            },
+            {
+              "x": 860,
+              "y": 649,
+              "w": 46,
+              "h": 46,
+              "confidence": 0.527,
+              "text": "0 20"
+            },
+            {
+              "x": 839,
+              "y": 649,
+              "w": 45,
+              "h": 46,
+              "confidence": 0.56,
+              "text": "Q220"
+            },
+            {
+              "x": 818,
+              "y": 651,
+              "w": 44,
+              "h": 44,
+              "confidence": 0.704,
+              "text": "012200"
+            },
+            {
+              "x": 797,
+              "y": 649,
+              "w": 45,
+              "h": 45,
+              "confidence": 0.48,
+              "text": "020"
+            },
+            {
+              "x": 776,
+              "y": 651,
+              "w": 43,
+              "h": 43,
+              "confidence": 0.53,
+              "text": "022019"
+            },
+            {
+              "x": 749,
+              "y": 647,
+              "w": 52,
+              "h": 50,
+              "confidence": 0.558,
+              "text": "02"
+            },
+            {
+              "x": 58,
+              "y": 642,
+              "w": 325,
+              "h": 20,
+              "confidence": 0.989,
+              "text": "Europe and the Middle East: Berlin-Brandenburg"
+            },
+            {
+              "x": 748,
+              "y": 635,
+              "w": 24,
+              "h": 19,
+              "confidence": 1,
+              "text": "0%"
+            },
+            {
+              "x": 748,
+              "y": 600,
+              "w": 24,
+              "h": 18,
+              "confidence": 1,
+              "text": "1%"
+            },
+            {
+              "x": 58,
+              "y": 597,
+              "w": 380,
+              "h": 17,
+              "confidence": 0.974,
+              "text": "market outside of North America - with positive reception."
+            },
+            {
+              "x": 58,
+              "y": 575,
+              "w": 622,
+              "h": 17,
+              "confidence": 0.973,
+              "text": "weeks, our quickest ramp of any vehicle ever. We launched FSD (Supervised)² in China - the first"
+            },
+            {
+              "x": 748,
+              "y": 566,
+              "w": 24,
+              "h": 18,
+              "confidence": 1,
+              "text": "2%"
+            },
+            {
+              "x": 57,
+              "y": 551,
+              "w": 604,
+              "h": 19,
+              "confidence": 0.992,
+              "text": "positive for our sales long-term. The Shanghai Model Y factory fully ramped production in six-"
+            },
+            {
+              "x": 748,
+              "y": 531,
+              "w": 24,
+              "h": 20,
+              "confidence": 1,
+              "text": "3%"
+            },
+            {
+              "x": 58,
+              "y": 528,
+              "w": 579,
+              "h": 18,
+              "confidence": 0.993,
+              "text": "will be bad for Tesla, we have long believed that it accelerates broader EV adoption and is"
+            },
+            {
+              "x": 60,
+              "y": 510,
+              "w": 610,
+              "h": 14,
+              "confidence": 0.994,
+              "text": "our cost structure and competitive positioning. While conventional wisdom is that competition"
+            },
+            {
+              "x": 748,
+              "y": 496,
+              "w": 24,
+              "h": 18,
+              "confidence": 1,
+              "text": "4%"
+            },
+            {
+              "x": 57,
+              "y": 483,
+              "w": 613,
+              "h": 20,
+              "confidence": 0.976,
+              "text": "This is significant given the region is the most competitive EV market and is also a validation of"
+            },
+            {
+              "x": 879,
+              "y": 484,
+              "w": 62,
+              "h": 16,
+              "confidence": 0.997,
+              "text": "—Europe"
+            },
+            {
+              "x": 958,
+              "y": 483,
+              "w": 44,
+              "h": 15,
+              "confidence": 0.898,
+              "text": "—China"
+            },
+            {
+              "x": 803,
+              "y": 483,
+              "w": 70,
+              "h": 15,
+              "confidence": 0.954,
+              "text": "-US/Canada"
+            },
+            {
+              "x": 744,
+              "y": 464,
+              "w": 270,
+              "h": 15,
+              "confidence": 0.989,
+              "text": "and infrastructure buildout as well as tool installation."
+            },
+            {
+              "x": 60,
+              "y": 463,
+              "w": 615,
+              "h": 14,
+              "confidence": 0.981,
+              "text": "We achieved record orders for a single day in the APAC region when we launched New Model Y."
+            },
+            {
+              "x": 744,
+              "y": 450,
+              "w": 561,
+              "h": 14,
+              "confidence": 0.996,
+              "text": "downtime related to factory upgrades, regulatory considerations and other factors. Construction includes factory"
+            },
+            {
+              "x": 58,
+              "y": 435,
+              "w": 107,
+              "h": 15,
+              "confidence": 0.998,
+              "text": "APAC: Shanghai"
+            },
+            {
+              "x": 745,
+              "y": 421,
+              "w": 565,
+              "h": 14,
+              "confidence": 0.994,
+              "text": "Installed capacity = current production rate and there may be limitations discovered as production rates approach"
+            },
+            {
+              "x": 1163,
+              "y": 391,
+              "w": 138,
+              "h": 20,
+              "confidence": 1,
+              "text": "Design development"
+            },
+            {
+              "x": 55,
+              "y": 389,
+              "w": 73,
+              "h": 24,
+              "confidence": 0.957,
+              "text": "next year."
+            },
+            {
+              "x": 851,
+              "y": 388,
+              "w": 69,
+              "h": 25,
+              "confidence": 0.979,
+              "text": "Roadster"
+            },
+            {
+              "x": 744,
+              "y": 388,
+              "w": 37,
+              "h": 23,
+              "confidence": 1,
+              "text": "TBD"
+            },
+            {
+              "x": 60,
+              "y": 370,
+              "w": 598,
+              "h": 14,
+              "confidence": 0.986,
+              "text": "Tesla Semi in Nevada and the Cybercab in Texas. Both remain on track for volume production"
+            },
+            {
+              "x": 1190,
+              "y": 363,
+              "w": 88,
+              "h": 20,
+              "confidence": 1,
+              "text": "Construction"
+            },
+            {
+              "x": 853,
+              "y": 363,
+              "w": 77,
+              "h": 20,
+              "confidence": 0.941,
+              "text": "Tesla Semi"
+            },
+            {
+              "x": 745,
+              "y": 360,
+              "w": 58,
+              "h": 25,
+              "confidence": 1,
+              "text": "Nevada"
+            },
+            {
+              "x": 58,
+              "y": 344,
+              "w": 615,
+              "h": 20,
+              "confidence": 0.981,
+              "text": "made with 100% U.S.-built battery packs. We continued progress on the installation of lines for"
+            },
+            {
+              "x": 1190,
+              "y": 335,
+              "w": 87,
+              "h": 19,
+              "confidence": 1,
+              "text": "Construction"
+            },
+            {
+              "x": 855,
+              "y": 335,
+              "w": 66,
+              "h": 21,
+              "confidence": 1,
+              "text": "Cybercab"
+            },
+            {
+              "x": 60,
+              "y": 326,
+              "w": 598,
+              "h": 14,
+              "confidence": 0.99,
+              "text": "achieved record battery pack production. Model 3 and Model Y deliveries in the U.S. are now"
+            },
+            {
+              "x": 1196,
+              "y": 308,
+              "w": 77,
+              "h": 20,
+              "confidence": 1,
+              "text": "Production"
+            },
+            {
+              "x": 1076,
+              "y": 308,
+              "w": 66,
+              "h": 20,
+              "confidence": 1,
+              "text": ">125,000"
+            },
+            {
+              "x": 855,
+              "y": 308,
+              "w": 76,
+              "h": 20,
+              "confidence": 1,
+              "text": "Cybertruck"
+            },
+            {
+              "x": 61,
+              "y": 304,
+              "w": 593,
+              "h": 14,
+              "confidence": 0.986,
+              "text": "Cybertruck with 362 miles of range, starting under $63k after incentives. Gigafactory Nevada"
+            },
+            {
+              "x": 1196,
+              "y": 280,
+              "w": 77,
+              "h": 19,
+              "confidence": 1,
+              "text": "Production"
+            },
+            {
+              "x": 1076,
+              "y": 280,
+              "w": 67,
+              "h": 19,
+              "confidence": 1,
+              "text": ">250,000"
+            },
+            {
+              "x": 853,
+              "y": 280,
+              "w": 63,
+              "h": 19,
+              "confidence": 0.987,
+              "text": "Model Y"
+            },
+            {
+              "x": 58,
+              "y": 280,
+              "w": 623,
+              "h": 18,
+              "confidence": 0.983,
+              "text": "In April, Gigafactory Texas produced its 400,oo0th vehicle and the team launched the Long Range"
+            },
+            {
+              "x": 742,
+              "y": 277,
+              "w": 51,
+              "h": 25,
+              "confidence": 1,
+              "text": "Texas"
+            },
+            {
+              "x": 1196,
+              "y": 251,
+              "w": 77,
+              "h": 20,
+              "confidence": 1,
+              "text": "Production"
+            },
+            {
+              "x": 1075,
+              "y": 250,
+              "w": 69,
+              "h": 24,
+              "confidence": 0.956,
+              "text": ">375,000"
+            },
+            {
+              "x": 853,
+              "y": 251,
+              "w": 63,
+              "h": 21,
+              "confidence": 0.987,
+              "text": "Model Y"
+            },
+            {
+              "x": 746,
+              "y": 250,
+              "w": 47,
+              "h": 24,
+              "confidence": 0.973,
+              "text": "Berlin"
+            },
+            {
+              "x": 58,
+              "y": 250,
+              "w": 221,
+              "h": 18,
+              "confidence": 0.99,
+              "text": "US: California, Nevada and Texas"
+            },
+            {
+              "x": 1076,
+              "y": 224,
+              "w": 67,
+              "h": 20,
+              "confidence": 0.999,
+              "text": ">950,000"
+            },
+            {
+              "x": 855,
+              "y": 224,
+              "w": 128,
+              "h": 19,
+              "confidence": 0.979,
+              "text": "Model 3 / Model Y"
+            },
+            {
+              "x": 1194,
+              "y": 221,
+              "w": 79,
+              "h": 25,
+              "confidence": 0.94,
+              "text": "Production"
+            },
+            {
+              "x": 746,
+              "y": 223,
+              "w": 66,
+              "h": 21,
+              "confidence": 1,
+              "text": "Shanghai"
+            },
+            {
+              "x": 60,
+              "y": 208,
+              "w": 261,
+              "h": 18,
+              "confidence": 0.992,
+              "text": "affordable options are as critical as ever."
+            },
+            {
+              "x": 1196,
+              "y": 196,
+              "w": 77,
+              "h": 20,
+              "confidence": 1,
+              "text": "Production"
+            },
+            {
+              "x": 853,
+              "y": 196,
+              "w": 128,
+              "h": 20,
+              "confidence": 0.988,
+              "text": "Model 3 / Model Y"
+            },
+            {
+              "x": 1076,
+              "y": 195,
+              "w": 67,
+              "h": 21,
+              "confidence": 1,
+              "text": ">550,000"
+            },
+            {
+              "x": 58,
+              "y": 185,
+              "w": 556,
+              "h": 18,
+              "confidence": 0.985,
+              "text": "later this year. Given economic uncertainty resulting from changing trade policy, more"
+            },
+            {
+              "x": 1196,
+              "y": 168,
+              "w": 77,
+              "h": 20,
+              "confidence": 1,
+              "text": "Production"
+            },
+            {
+              "x": 1083,
+              "y": 168,
+              "w": 60,
+              "h": 21,
+              "confidence": 0.961,
+              "text": "100,000"
+            },
+            {
+              "x": 855,
+              "y": 168,
+              "w": 126,
+              "h": 20,
+              "confidence": 0.99,
+              "text": "Model S / Model X"
+            },
+            {
+              "x": 743,
+              "y": 162,
+              "w": 74,
+              "h": 29,
+              "confidence": 0.964,
+              "text": "California"
+            },
+            {
+              "x": 58,
+              "y": 162,
+              "w": 620,
+              "h": 19,
+              "confidence": 0.991,
+              "text": "production. During the switchover, we also prepared our factories for the launch of new models"
+            },
+            {
+              "x": 1205,
+              "y": 135,
+              "w": 55,
+              "h": 29,
+              "confidence": 0.998,
+              "text": "Status"
+            },
+            {
+              "x": 1079,
+              "y": 135,
+              "w": 66,
+              "h": 29,
+              "confidence": 0.996,
+              "text": "Capacity"
+            },
+            {
+              "x": 744,
+              "y": 138,
+              "w": 55,
+              "h": 26,
+              "confidence": 0.969,
+              "text": "Region"
+            },
+            {
+              "x": 57,
+              "y": 140,
+              "w": 616,
+              "h": 18,
+              "confidence": 0.99,
+              "text": "As guided, switchover of production lines for the New Model Y resulted in several weeks of lost"
+            },
+            {
+              "x": 852,
+              "y": 137,
+              "w": 51,
+              "h": 25,
+              "confidence": 1,
+              "text": "Model"
+            },
+            {
+              "x": 889,
+              "y": 113,
+              "w": 270,
+              "h": 20,
+              "confidence": 0.998,
+              "text": "Current Installed Annual Vehicle Capacity"
+            },
+            {
+              "x": 60,
+              "y": 65,
+              "w": 123,
+              "h": 18,
+              "confidence": 1,
+              "text": "AUTOMOTIVE"
+            }
+          ]
+        },
+        {
+          "name": "page_9.jpg",
+          "height": 792,
+          "width": 612,
+          "x": 0,
+          "y": 0,
+          "original_width": 1236,
+          "original_height": 1600,
+          "rotation": 0,
+          "type": "full_page_screenshot"
+        },
+        {
+          "name": "page_9_text_1.jpg",
+          "height": 73.881,
+          "width": 260.584,
+          "x": 48.32,
+          "y": 201.625,
+          "original_width": 526,
+          "original_height": 149,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_9_text_2.jpg",
+          "height": 86.771,
+          "width": 260.79,
+          "x": 48.136,
+          "y": 307.697,
+          "original_width": 526,
+          "original_height": 175,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_9_table_1.jpg",
+          "height": 158.336,
+          "width": 234.233,
+          "x": 336.732,
+          "y": 118.365,
+          "original_width": 473,
+          "original_height": 319,
+          "rotation": 0,
+          "type": "layout_table"
+        },
+        {
+          "name": "page_9_text_3.jpg",
+          "height": 47.727,
+          "width": 259.454,
+          "x": 48.309,
+          "y": 121.621,
+          "original_width": 523,
+          "original_height": 96,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_9_picture_1.jpg",
+          "height": 135.797,
+          "width": 232.115,
+          "x": 338.331,
+          "y": 319.096,
+          "original_width": 468,
+          "original_height": 274,
+          "rotation": 0,
+          "type": "layout_picture"
+        },
+        {
+          "name": "page_9_sectionHeader_1.jpg",
+          "height": 9.867,
+          "width": 44.939,
+          "x": 48.16,
+          "y": 290.913,
+          "original_width": 90,
+          "original_height": 19,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_9_text_4.jpg",
+          "height": 48.419,
+          "width": 249.476,
+          "x": 45.547,
+          "y": 427.85,
+          "original_width": 503,
+          "original_height": 97,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_9_sectionHeader_2.jpg",
+          "height": 9.318,
+          "width": 134.983,
+          "x": 48.661,
+          "y": 411.928,
+          "original_width": 272,
+          "original_height": 18,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_9_sectionHeader_3.jpg",
+          "height": 8.659,
+          "width": 91.264,
+          "x": 48.603,
+          "y": 185.318,
+          "original_width": 184,
+          "original_height": 17,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_9_sectionHeader_4.jpg",
+          "height": 9.347,
+          "width": 112.461,
+          "x": 397.649,
+          "y": 106.56,
+          "original_width": 227,
+          "original_height": 18,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_9_text_5.jpg",
+          "height": 31.625,
+          "width": 236.635,
+          "x": 336.72,
+          "y": 283.925,
+          "original_width": 477,
+          "original_height": 63,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_9_sectionHeader_5.jpg",
+          "height": 7.929,
+          "width": 51.439,
+          "x": 48.425,
+          "y": 78.431,
+          "original_width": 103,
+          "original_height": 16,
+          "rotation": 0,
+          "type": "layout_sectionHeader"
+        },
+        {
+          "name": "page_9_text_6.jpg",
+          "height": 24.426,
+          "width": 198.51,
+          "x": 342.574,
+          "y": 457.111,
+          "original_width": 400,
+          "original_height": 49,
+          "rotation": 0,
+          "type": "layout_text"
+        },
+        {
+          "name": "page_9_listItem_1.jpg",
+          "height": 19.127,
+          "width": 252.821,
+          "x": 41.72,
+          "y": 457.174,
+          "original_width": 510,
+          "original_height": 38,
+          "rotation": 0,
+          "type": "layout_listItem"
+        }
+      ],
+      "charts": [],
+      "items": [
+        {
+          "type": "heading",
+          "md": "# AUTOMOTIVE",
+          "value": "AUTOMOTIVE",
+          "lvl": 1,
+          "bBox": {
+            "x": 48.79,
+            "y": 76.6,
+            "w": 51.67,
+            "h": 10.37,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "heading",
+          "md": "# Current Installed Annual Vehicle Capacity",
+          "value": "Current Installed Annual Vehicle Capacity",
+          "lvl": 1,
+          "bBox": {
+            "x": 397.03,
+            "y": 104.26,
+            "w": 113.42,
+            "h": 11.53,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "text",
+          "md": "As guided, switchover of production lines for the New Model Y resulted in several weeks of lost production. During the switchover, we also prepared our factories for the launch of new models later this year. Given economic uncertainty resulting from changing trade policy, more affordable options are as critical as ever.",
+          "value": "As guided, switchover of production lines for the New Model Y resulted in several weeks of lost production. During the switchover, we also prepared our factories for the launch of new models later this year. Given economic uncertainty resulting from changing trade policy, more affordable options are as critical as ever.",
+          "bBox": {
+            "x": 47.53,
+            "y": 119.82,
+            "w": 260.87,
+            "h": 49.56,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "table",
+          "md": "| Region     | Model             | Capacity | Status       |\n| ---------- | ----------------- | -------- | ------------ |\n| California | Model S / Model X | 100,000  | Production   |\n|            | Model 3 / Model Y | >550,000 | Production   |\n| Shanghai   | Model 3 / Model Y | >950,000 | Production   |\n| Berlin     | Model Y           |          |              |\n| Texas      | Model Y           |          |              |\n|            | Cybertruck        | >375,000 | Production   |\n|            | Cybercab          | >250,000 | Production   |\n|            | Tesla Semi        | >125,000 | Production   |\n|            | Roadster          |          | Construction |",
+          "rows": [
+            [
+              "Region",
+              "Model",
+              "Capacity",
+              "Status"
+            ],
+            [
+              "California",
+              "Model S / Model X",
+              "100,000",
+              "Production"
+            ],
+            [
+              "",
+              "Model 3 / Model Y",
+              ">550,000",
+              "Production"
+            ],
+            [
+              "Shanghai",
+              "Model 3 / Model Y",
+              ">950,000",
+              "Production"
+            ],
+            [
+              "Berlin",
+              "Model Y",
+              "",
+              ""
+            ],
+            [
+              "Texas",
+              "Model Y",
+              "",
+              ""
+            ],
+            [
+              "",
+              "Cybertruck",
+              ">375,000",
+              "Production"
+            ],
+            [
+              "",
+              "Cybercab",
+              ">250,000",
+              "Production"
+            ],
+            [
+              "",
+              "Tesla Semi",
+              ">125,000",
+              "Production"
+            ],
+            [
+              "",
+              "Roadster",
+              "",
+              "Construction"
+            ]
+          ],
+          "isPerfectTable": true,
+          "csv": "\"Region\",\"Model\",\"Capacity\",\"Status\"\n\"California\",\"Model S / Model X\",\"100,000\",\"Production\"\n\"\",\"Model 3 / Model Y\",\">550,000\",\"Production\"\n\"Shanghai\",\"Model 3 / Model Y\",\">950,000\",\"Production\"\n\"Berlin\",\"Model Y\",\"\",\"\"\n\"Texas\",\"Model Y\",\"\",\"\"\n\"\",\"Cybertruck\",\">375,000\",\"Production\"\n\"\",\"Cybercab\",\">250,000\",\"Production\"\n\"\",\"Tesla Semi\",\">125,000\",\"Production\"\n\"\",\"Roadster\",\"\",\"Construction\"",
+          "bBox": {
+            "x": 46.68,
+            "y": 9.17,
+            "w": 527.19,
+            "h": 466.79,
+            "confidence": 0.7,
+            "label": "table"
+          }
+        },
+        {
+          "type": "text",
+          "md": "In April, Gigafactory Texas produced its 400,000th vehicle and the team launched the Long Range Cybertruck with 362 miles of range, starting under $63k after incentives. Gigafactory Nevada achieved record battery pack production. Model 3 and Model Y deliveries in the U.S. are now made with 100% U.S.-built battery packs. We continued progress on the installation of lines for Tesla Semi in Nevada and the Cybercab in Texas. Both remain on track for volume production next year.",
+          "value": "In April, Gigafactory Texas produced its 400,000th vehicle and the team launched the Long Range Cybertruck with 362 miles of range, starting under $63k after incentives. Gigafactory Nevada achieved record battery pack production. Model 3 and Model Y deliveries in the U.S. are now made with 100% U.S.-built battery packs. We continued progress on the installation of lines for Tesla Semi in Nevada and the Cybercab in Texas. Both remain on track for volume production next year.",
+          "bBox": {
+            "x": 46.68,
+            "y": 198.77,
+            "w": 310.01,
+            "h": 78.37,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "heading",
+          "md": "# APAC: Shanghai",
+          "value": "APAC: Shanghai",
+          "lvl": 1,
+          "bBox": {
+            "x": 47.95,
+            "y": 289.82,
+            "w": 44.95,
+            "h": 8.64,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "text",
+          "md": "We achieved record orders for a single day in the APAC region when we launched New Model Y. This is significant given the region is the most competitive EV market and is also a validation of our cost structure and competitive positioning. While conventional wisdom is that competition will be bad for Tesla, we have long believed that it accelerates broader EV adoption and is positive for our sales long-term. The Shanghai Model Y factory fully ramped production in six weeks, our quickest ramp of any vehicle ever. We launched FSD (Supervised)² in China - the first market outside of North America - with positive reception.",
+          "value": "We achieved record orders for a single day in the APAC region when we launched New Model Y. This is significant given the region is the most competitive EV market and is also a validation of our cost structure and competitive positioning. While conventional wisdom is that competition will be bad for Tesla, we have long believed that it accelerates broader EV adoption and is positive for our sales long-term. The Shanghai Model Y factory fully ramped production in six weeks, our quickest ramp of any vehicle ever. We launched FSD (Supervised)² in China - the first market outside of North America - with positive reception.",
+          "bBox": {
+            "x": 47.53,
+            "y": 135.96,
+            "w": 510.81,
+            "h": 257.02,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "heading",
+          "md": "# Europe and the Middle East: Berlin-Brandenburg",
+          "value": "Europe and the Middle East: Berlin-Brandenburg",
+          "lvl": 1,
+          "bBox": {
+            "x": 47.95,
+            "y": 409.11,
+            "w": 136.52,
+            "h": 11.53,
+            "confidence": 0.7,
+            "label": "heading"
+          }
+        },
+        {
+          "type": "text",
+          "md": "Gigafactory Berlin built its 500,000th Model Y. We recently began deliveries of Model 3 and Model Y and plan to begin deliveries of Cybertruck later this year in Saudi Arabia - the first Cybertruck market outside of North America. We continue to prepare for the launch of FSD (Supervised) in Europe this year, pending regulatory approval.",
+          "value": "Gigafactory Berlin built its 500,000th Model Y. We recently began deliveries of Model 3 and Model Y and plan to begin deliveries of Cybertruck later this year in Saudi Arabia - the first Cybertruck market outside of North America. We continue to prepare for the launch of FSD (Supervised) in Europe this year, pending regulatory approval.",
+          "bBox": {
+            "x": 47.53,
+            "y": 183.21,
+            "w": 360.84,
+            "h": 292.75,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "text",
+          "md": "Market share of Tesla vehicles by region (TTM)\n4% - US/Canada\n3% - Europe\n2% - China\n1%\n0%",
+          "value": "Market share of Tesla vehicles by region (TTM)\n4% - US/Canada\n3% - Europe\n2% - China\n1%\n0%",
+          "bBox": {
+            "x": 337.8,
+            "y": 324.98,
+            "w": 183.15,
+            "h": 128.51,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        },
+        {
+          "type": "text",
+          "md": "Source: Tesla estimates based on latest available data from ACEA; Autonews.com; CAAM",
+          "value": "Source: Tesla estimates based on latest available data from ACEA; Autonews.com; CAAM",
+          "bBox": {
+            "x": 475.16,
+            "y": 411.99,
+            "w": 49.57,
+            "h": 29.97,
+            "confidence": 0.7,
+            "label": "text"
+          }
+        }
+      ],
+      "status": "OK",
+      "originalOrientationAngle": 0,
+      "links": [],
+      "width": 612,
+      "height": 792,
+      "triggeredAutoMode": false,
+      "parsingMode": "accurate",
+      "structuredData": null,
+      "noStructuredContent": false,
+      "noTextContent": false,
+      "pageHeaderMarkdown": "",
+      "pageFooterMarkdown": "",
+      "printedPageNumber": "",
+      "slideSpeakerNotes": null,
+      "slideSectionName": null,
+      "confidence": 0.825,
+      "layout": [
+        {
+          "image": "page_9_text_1.jpg",
+          "confidence": 0.985,
+          "label": "text",
+          "bbox": {
+            "x": 0.078,
+            "y": 0.254,
+            "w": 0.425,
+            "h": 0.093
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_text_2.jpg",
+          "confidence": 0.985,
+          "label": "text",
+          "bbox": {
+            "x": 0.078,
+            "y": 0.388,
+            "w": 0.426,
+            "h": 0.109
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_table_1.jpg",
+          "confidence": 0.984,
+          "label": "table",
+          "bbox": {
+            "x": 0.55,
+            "y": 0.149,
+            "w": 0.382,
+            "h": 0.199
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_text_3.jpg",
+          "confidence": 0.984,
+          "label": "text",
+          "bbox": {
+            "x": 0.078,
+            "y": 0.153,
+            "w": 0.423,
+            "h": 0.06
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_picture_1.jpg",
+          "confidence": 0.947,
+          "label": "picture",
+          "bbox": {
+            "x": 0.552,
+            "y": 0.402,
+            "w": 0.379,
+            "h": 0.171
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_sectionHeader_1.jpg",
+          "confidence": 0.946,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.078,
+            "y": 0.367,
+            "w": 0.073,
+            "h": 0.012
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_text_4.jpg",
+          "confidence": 0.944,
+          "label": "text",
+          "bbox": {
+            "x": 0.074,
+            "y": 0.54,
+            "w": 0.407,
+            "h": 0.061
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_sectionHeader_2.jpg",
+          "confidence": 0.935,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.079,
+            "y": 0.52,
+            "w": 0.22,
+            "h": 0.011
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_sectionHeader_3.jpg",
+          "confidence": 0.93,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.079,
+            "y": 0.233,
+            "w": 0.149,
+            "h": 0.01
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_sectionHeader_4.jpg",
+          "confidence": 0.91,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.649,
+            "y": 0.134,
+            "w": 0.183,
+            "h": 0.011
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_text_5.jpg",
+          "confidence": 0.855,
+          "label": "text",
+          "bbox": {
+            "x": 0.55,
+            "y": 0.358,
+            "w": 0.386,
+            "h": 0.039
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_sectionHeader_5.jpg",
+          "confidence": 0.824,
+          "label": "sectionHeader",
+          "bbox": {
+            "x": 0.079,
+            "y": 0.099,
+            "w": 0.084,
+            "h": 0.01
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_text_6.jpg",
+          "confidence": 0.77,
+          "label": "text",
+          "bbox": {
+            "x": 0.559,
+            "y": 0.577,
+            "w": 0.324,
+            "h": 0.03
+          },
+          "isLikelyNoise": false
+        },
+        {
+          "image": "page_9_listItem_1.jpg",
+          "confidence": 0.686,
+          "label": "listItem",
+          "bbox": {
+            "x": 0.068,
+            "y": 0.577,
+            "w": 0.413,
+            "h": 0.024
+          },
+          "isLikelyNoise": false
+        }
+      ],
+      "costOptimized": false
+    }
+  ],
+  "job_metadata": {
+    "credits_used": 0,
+    "job_credits_usage": 0,
+    "job_pages": 1,
+    "job_auto_mode_triggered_pages": 0,
+    "job_is_cache_hit": false
+  }
+}

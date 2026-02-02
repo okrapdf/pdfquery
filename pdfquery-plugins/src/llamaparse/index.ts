@@ -1,18 +1,41 @@
 /**
- * LlamaParse plugin — parse PDFs via LlamaIndex Cloud API.
+ * LlamaParse plugin — parse PDFs via LlamaIndex Cloud API (JSON rich mode).
  *
- * Upload → poll → fetch JSON result with layout bboxes.
- * Returns ocr + table tags with normalized 0-1 bounding boxes.
+ * Upload → poll → fetch JSON result → map items/layout/ocr into Tags.
+ *
+ * Three data layers from LlamaParse JSON response:
+ *
+ *   items[]         Structured elements with text + bbox (PDF points).
+ *                   Types: heading, text, table. This is the primary source.
+ *
+ *   layout[]        Layout detections with higher confidence + 0-1 bboxes.
+ *                   Used to enrich items (better confidence) and add elements
+ *                   LlamaParse items missed (e.g. pictures).
+ *
+ *   images[].ocr[]  Word-level OCR from embedded images (pixel coords).
+ *                   Optional — behind `includeWordOcr` flag.
+ *
+ * Bbox normalization follows the pdfquery/okrapdf convention:
+ *   items.bBox:  PDF points → ÷ page.width/height → 0-1
+ *   layout.bbox: already 0-1
+ *   ocr coords:  image pixels → page points → 0-1
+ *   All go through core normalizeBbox() + clampBbox().
  *
  * Sets artifacts:
- *   - pdf:input    (PDFInput)
- *   - ocr:pages    (OcrPage[])
+ *   - pdf:input        (PDFInput)
+ *   - ocr:pages        (OcrPage[])
+ *   - markdown:pages   (MarkdownPage[])
  */
 
 import { readFile } from 'node:fs/promises';
-import type { PDFQueryPlugin, Tag } from 'pdfquery';
+import type { PDFQueryPlugin, Tag, BBox } from 'pdfquery';
+import { normalizeBbox, clampBbox } from 'pdfquery';
 import { ARTIFACT_KEYS } from '../types';
 import type { OcrPage, OcrBlock } from '../types';
+
+// ============================================================================
+// Config
+// ============================================================================
 
 export interface LlamaParseConfig {
   /** PDF to process — file path or buffer */
@@ -21,84 +44,193 @@ export interface LlamaParseConfig {
   apiKey?: string;
   /** API base URL (default: https://api.cloud.llamaindex.ai) */
   apiBase?: string;
-  /** Result type — json gives bboxes, markdown gives text only (default: json) */
-  resultType?: 'json' | 'markdown';
   /** Poll interval in ms (default: 2000) */
   pollIntervalMs?: number;
   /** Max wait time in ms (default: 300000 = 5min) */
   timeoutMs?: number;
   /** Target specific pages: "1,3,5-10" */
   targetPages?: string;
+  /** Include word-level OCR from embedded images (default: false) */
+  includeWordOcr?: boolean;
+  /** Include layout[] detections as separate tags (default: true) */
+  includeLayout?: boolean;
+  /** Take page screenshots (default: true, needed for VLM) */
+  takeScreenshot?: boolean;
 }
 
-interface LlamaParseLayoutItem {
-  label: string;
+// ============================================================================
+// LlamaParse response types (from SDK + fixture analysis)
+// ============================================================================
+
+interface LPBBox {
+  x: number; y: number; w: number; h: number;
+  confidence?: number; label?: string;
+}
+
+interface LPPageItem {
+  type: string;         // 'heading' | 'text' | 'table'
+  value?: string;
+  md?: string;
+  lvl?: number;         // heading level 1-6
+  rows?: string[][];    // table 2D array
+  csv?: string;
+  isPerfectTable?: boolean;
+  html?: string;
+  bBox?: LPBBox;
+}
+
+interface LPLayoutItem {
+  image: string;
+  confidence: number;
+  label: string;        // 'table' | 'text' | 'listItem' | 'sectionHeader' | 'picture'
   bbox: { x: number; y: number; w: number; h: number };
-  confidence?: number;
+  isLikelyNoise: boolean;
 }
 
-interface LlamaParsePageResult {
+interface LPOcrWord {
+  x: number; y: number; w: number; h: number;
+  confidence: number; text: string;
+}
+
+interface LPImage {
+  name: string;
+  height: number; width: number;
+  x: number; y: number;
+  original_width: number; original_height: number;
+  rotation?: number;
+  type?: string;        // 'full_page_screenshot' | 'layout_table' | ...
+  ocr?: LPOcrWord[];
+}
+
+interface LPPage {
   page: number;
-  text: string;
-  markdown: string;
-  layout?: LlamaParseLayoutItem[];
+  text?: string;
+  md?: string;
+  width: number;        // PDF points (e.g. 612)
+  height: number;       // PDF points (e.g. 792)
+  confidence?: number;
+  status?: string;
+  items: LPPageItem[];
+  layout: LPLayoutItem[];
+  images: LPImage[];
+  charts: unknown[];
 }
 
-interface LlamaParseJsonResult {
-  pages: LlamaParsePageResult[];
+interface LPJsonResult {
+  pages: LPPage[];
+  job_metadata: Record<string, unknown>;
 }
+
+// ============================================================================
+// Markdown page artifact type
+// ============================================================================
+
+export interface MarkdownPage {
+  page: number;
+  markdown: string;
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
 
 async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * Create a LlamaParse plugin.
- *
- * @example
- * ```ts
- * const doc = await pdfquery.load([
- *   llamaParse({ pdf: { type: 'path', path: './report.pdf' } }),
- * ]);
- * doc.$('table').count();
- * doc.$('ocr').contains('revenue').texts();
- * ```
- */
+/** Normalize items bBox (PDF points) to 0-1 using page dimensions */
+function normalizeItemBbox(b: LPBBox, pageW: number, pageH: number): BBox | null {
+  return normalizeBbox({ x: b.x / pageW, y: b.y / pageH, width: b.w / pageW, height: b.h / pageH });
+}
+
+/** Normalize layout bbox — already 0-1 but in {x,y,w,h} format */
+function normalizeLayoutBbox(b: { x: number; y: number; w: number; h: number }): BBox | null {
+  return normalizeBbox({ x: b.x, y: b.y, width: b.w, height: b.h });
+}
+
+/** Normalize OCR word coords (image pixels) to 0-1 page coords */
+function normalizeOcrBbox(
+  ocr: LPOcrWord,
+  img: LPImage,
+  pageW: number, pageH: number,
+): BBox | null {
+  const nx = (img.x + ocr.x * (img.width / img.original_width)) / pageW;
+  const ny = (img.y + ocr.y * (img.height / img.original_height)) / pageH;
+  const nw = (ocr.w * (img.width / img.original_width)) / pageW;
+  const nh = (ocr.h * (img.height / img.original_height)) / pageH;
+  return normalizeBbox({ x: nx, y: ny, width: nw, height: nh });
+}
+
+/** Map LlamaParse item type → pdfquery Tag type */
+function mapItemType(lpType: string): string {
+  switch (lpType) {
+    case 'heading': return 'heading';
+    case 'table': return 'table';
+    case 'text': return 'ocr';
+    default: return 'ocr';
+  }
+}
+
+/** Map LlamaParse layout label → pdfquery Tag type */
+function mapLayoutLabel(label: string): string {
+  switch (label) {
+    case 'table': return 'table';
+    case 'picture': return 'figure';
+    case 'sectionHeader': return 'heading';
+    case 'listItem': return 'ocr';
+    case 'text': return 'ocr';
+    default: return 'ocr';
+  }
+}
+
+/** Simple bbox overlap check (IoU > 0) */
+function bboxOverlaps(a: BBox, b: BBox): boolean {
+  const ax2 = a.x + a.width;
+  const ay2 = a.y + a.height;
+  const bx2 = b.x + b.width;
+  const by2 = b.y + b.height;
+  return a.x < bx2 && ax2 > b.x && a.y < by2 && ay2 > b.y;
+}
+
+// ============================================================================
+// Plugin
+// ============================================================================
+
 export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
   const {
     apiKey = process.env.LLAMAINDEX_API_KEY,
     apiBase = 'https://api.cloud.llamaindex.ai',
-    resultType = 'json',
     pollIntervalMs = 2000,
     timeoutMs = 300_000,
     targetPages,
+    includeWordOcr = false,
+    includeLayout = true,
+    takeScreenshot = true,
   } = config;
 
   return {
     name: 'llamaparse',
     async run(ctx) {
       if (!apiKey) throw new Error('llamaparse: LLAMAINDEX_API_KEY not set');
-
       ctx.emit('llamaparse:start');
 
-      // 1. Build form data for upload
+      // ── 1. Upload ──────────────────────────────────────────────────
       const formData = new FormData();
-
       let fileBlob: Blob;
       let fileName: string;
       if (config.pdf.type === 'path') {
         const data = await readFile(config.pdf.path);
-        fileBlob = new Blob([data], { type: 'application/pdf' });
+        fileBlob = new Blob([new Uint8Array(data)], { type: 'application/pdf' });
         fileName = config.pdf.path.split('/').pop() || 'document.pdf';
       } else {
-        fileBlob = new Blob([config.pdf.data], { type: 'application/pdf' });
+        fileBlob = new Blob([new Uint8Array(config.pdf.data)], { type: 'application/pdf' });
         fileName = config.pdf.fileName || 'document.pdf';
       }
       formData.append('file', fileBlob, fileName);
       formData.append('extract_layout', 'true');
+      if (takeScreenshot) formData.append('take_screenshot', 'true');
       if (targetPages) formData.append('target_pages', targetPages);
 
-      // 2. Upload
       const uploadRes = await fetch(`${apiBase}/api/parsing/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}` },
@@ -111,7 +243,7 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
       const { id: jobId } = await uploadRes.json() as { id: string };
       ctx.emit('llamaparse:uploaded', { jobId });
 
-      // 3. Poll for completion
+      // ── 2. Poll ────────────────────────────────────────────────────
       const deadline = Date.now() + timeoutMs;
       while (Date.now() < deadline) {
         const statusRes = await fetch(`${apiBase}/api/parsing/job/${jobId}`, {
@@ -119,93 +251,213 @@ export function llamaParse(config: LlamaParseConfig): PDFQueryPlugin {
         });
         if (!statusRes.ok) throw new Error(`llamaparse status check failed: ${statusRes.status}`);
         const { status } = await statusRes.json() as { status: string };
-
         if (status === 'SUCCESS') break;
         if (status === 'ERROR') throw new Error('llamaparse: job failed');
-
         await sleep(pollIntervalMs);
       }
       if (Date.now() >= deadline) throw new Error('llamaparse: timeout waiting for job');
 
-      // 4. Fetch result
-      const resultUrl = resultType === 'json'
-        ? `${apiBase}/api/parsing/job/${jobId}/result/json`
-        : `${apiBase}/api/parsing/job/${jobId}/result/markdown`;
-
-      const resultRes = await fetch(resultUrl, {
+      // ── 3. Fetch JSON result ───────────────────────────────────────
+      const resultRes = await fetch(`${apiBase}/api/parsing/job/${jobId}/result/json`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       if (!resultRes.ok) throw new Error(`llamaparse result fetch failed: ${resultRes.status}`);
+      const json = await resultRes.json() as LPJsonResult;
 
-      // 5. Convert to tags
-      const tags: Tag[] = [];
-      const ocrPages: OcrPage[] = [];
+      // ── 4. Process pages ───────────────────────────────────────────
+      return processJsonResult(json, ctx, { includeWordOcr, includeLayout });
+    },
+  };
 
-      if (resultType === 'json') {
-        const json = await resultRes.json() as LlamaParseJsonResult;
+  // Separated so tests can call processJsonResult directly with fixtures
+}
 
-        for (const page of json.pages) {
-          const pageNum = page.page;
-          const blocks: OcrBlock[] = [];
+/**
+ * Process a LlamaParse JSON result into Tags + artifacts.
+ * Exported so tests can call it directly with fixture data (no API).
+ */
+export function processJsonResult(
+  json: LPJsonResult,
+  ctx: { emit: (event: string, data?: unknown) => void; artifacts: Map<string, unknown> },
+  opts: { includeWordOcr?: boolean; includeLayout?: boolean } = {},
+): { tags: Tag[] } {
+  const tags: Tag[] = [];
+  const ocrPages: OcrPage[] = [];
+  const markdownPages: MarkdownPage[] = [];
 
-          if (page.layout && page.layout.length > 0) {
-            for (let i = 0; i < page.layout.length; i++) {
-              const item = page.layout[i];
-              const id = `lp-${pageNum}-${i}`;
-              const bbox = { x: item.bbox.x, y: item.bbox.y, width: item.bbox.w, height: item.bbox.h };
-              const confidence = item.confidence ?? 1;
+  for (const page of json.pages) {
+    const pageNum = page.page;
+    const pageW = page.width;
+    const pageH = page.height;
+    const blocks: OcrBlock[] = [];
+    const itemBboxes: BBox[] = []; // track item bboxes for layout dedup
 
-              if (item.label === 'table') {
-                tags.push({ id, type: 'table', page: pageNum, bbox, text: '', attrs: { confidence } });
-              } else {
-                const type = item.label === 'figure' ? 'figure' : 'ocr';
-                tags.push({ id, type, page: pageNum, bbox, text: '', attrs: { confidence } });
-                blocks.push({ id, page: pageNum, text: '', bbox, confidence });
-              }
-            }
-          }
+    // ── 4a. items[] → Tags (primary source) ────────────────────────
+    for (let i = 0; i < page.items.length; i++) {
+      const item = page.items[i];
+      const id = `lp-${pageNum}-item-${i}`;
+      const tagType = mapItemType(item.type);
 
-          // Always add a full-page OCR block with the page text
-          if (page.text || page.markdown) {
-            const textId = `lp-text-${pageNum}`;
-            const text = page.markdown || page.text;
-            tags.push({
-              id: textId,
-              type: 'ocr',
-              page: pageNum,
-              bbox: { x: 0, y: 0, width: 1, height: 1 },
-              text,
-              attrs: { confidence: 1 },
-            });
-            blocks.push({
-              id: textId,
-              page: pageNum,
-              text,
-              bbox: { x: 0, y: 0, width: 1, height: 1 },
-              confidence: 1,
-            });
-          }
+      let bbox: BBox = { x: 0, y: 0, width: 1, height: 1 };
+      if (item.bBox) {
+        const normalized = normalizeItemBbox(item.bBox, pageW, pageH);
+        if (normalized) bbox = clampBbox(normalized);
+      }
+      itemBboxes.push(bbox);
 
-          ocrPages.push({ page: pageNum, blocks, tables: [] });
-        }
-      } else {
-        // Markdown mode — single text block per page (no bboxes)
-        const markdown = await resultRes.text();
+      const confidence = item.bBox?.confidence ?? (page.confidence ?? 0.7);
+
+      if (item.type === 'table') {
+        // Table: rich attrs
         tags.push({
-          id: 'lp-md-1',
-          type: 'markdown',
-          page: 1,
-          bbox: { x: 0, y: 0, width: 1, height: 1 },
-          text: markdown,
-          attrs: { confidence: 1 },
+          id,
+          type: 'table',
+          page: pageNum,
+          bbox,
+          text: item.md || '',
+          attrs: {
+            source: 'llamaparse',
+            confidence,
+            rows: item.rows,
+            csv: item.csv,
+            isPerfectTable: item.isPerfectTable,
+            html: item.html,
+            markdown: item.md,
+          },
+        });
+      } else if (item.type === 'heading') {
+        tags.push({
+          id,
+          type: 'heading',
+          page: pageNum,
+          bbox,
+          text: item.value || '',
+          attrs: {
+            source: 'llamaparse',
+            confidence,
+            level: item.lvl,
+            markdown: item.md,
+          },
+        });
+      } else {
+        // text → ocr
+        tags.push({
+          id,
+          type: 'ocr',
+          page: pageNum,
+          bbox,
+          text: item.value || item.md || '',
+          attrs: {
+            source: 'llamaparse',
+            confidence,
+            markdown: item.md,
+          },
         });
       }
 
-      ctx.artifacts.set(ARTIFACT_KEYS.PDF_INPUT, config.pdf);
-      ctx.artifacts.set(ARTIFACT_KEYS.OCR_PAGES, ocrPages);
+      // Also add to OcrPage blocks
+      blocks.push({
+        id,
+        page: pageNum,
+        text: item.value || item.md || '',
+        bbox,
+        confidence,
+        type: 'paragraph',
+      });
+    }
 
-      ctx.emit('llamaparse:complete', { pages: ocrPages.length, tags: tags.length });
-      return { tags };
-    },
-  };
+    // ── 4b. layout[] enrichment ────────────────────────────────────
+    if (opts.includeLayout !== false) {
+      for (let i = 0; i < page.layout.length; i++) {
+        const el = page.layout[i];
+        if (el.isLikelyNoise) continue;
+
+        const normalized = normalizeLayoutBbox(el.bbox);
+        if (!normalized) continue;
+        const bbox = clampBbox(normalized);
+
+        // Skip layout elements that overlap existing item tags
+        const overlapsItem = itemBboxes.some(ib => bboxOverlaps(ib, bbox));
+        if (overlapsItem) continue;
+
+        // This layout element has no corresponding item — add it (e.g. pictures)
+        const tagType = mapLayoutLabel(el.label);
+        const id = `lp-${pageNum}-layout-${i}`;
+
+        tags.push({
+          id,
+          type: tagType,
+          page: pageNum,
+          bbox,
+          text: '',
+          attrs: {
+            source: 'llamaparse-layout',
+            confidence: el.confidence,
+            layoutLabel: el.label,
+            layoutImage: el.image,
+          },
+        });
+      }
+    }
+
+    // ── 4c. images[].ocr[] → word-level OCR ────────────────────────
+    if (opts.includeWordOcr) {
+      for (const img of page.images) {
+        // Skip full page screenshots and layout crops
+        if (img.type === 'full_page_screenshot') continue;
+        if (img.type?.startsWith('layout_')) continue;
+        if (!img.ocr?.length) continue;
+
+        for (let j = 0; j < img.ocr.length; j++) {
+          const word = img.ocr[j];
+          if (!word.text.trim()) continue;
+
+          const normalized = normalizeOcrBbox(word, img, pageW, pageH);
+          if (!normalized) continue;
+          const bbox = clampBbox(normalized);
+          const id = `lp-${pageNum}-ocr-${img.name}-${j}`;
+
+          tags.push({
+            id,
+            type: 'ocr',
+            page: pageNum,
+            bbox,
+            text: word.text,
+            attrs: {
+              source: 'llamaparse-ocr',
+              confidence: word.confidence,
+            },
+          });
+
+          blocks.push({
+            id,
+            page: pageNum,
+            text: word.text,
+            bbox,
+            confidence: word.confidence,
+            type: 'word',
+          });
+        }
+      }
+    }
+
+    // ── 4d. page markdown artifact ─────────────────────────────────
+    if (page.md) {
+      markdownPages.push({ page: pageNum, markdown: page.md });
+    }
+
+    ocrPages.push({ page: pageNum, blocks, tables: [] });
+  }
+
+  // ── 5. Set artifacts ─────────────────────────────────────────────
+  ctx.artifacts.set(ARTIFACT_KEYS.OCR_PAGES, ocrPages);
+  ctx.artifacts.set(ARTIFACT_KEYS.MARKDOWN_PAGES, markdownPages);
+
+  ctx.emit('llamaparse:complete', {
+    pages: ocrPages.length,
+    tags: tags.length,
+    markdownPages: markdownPages.length,
+  });
+
+  return { tags };
 }

@@ -1,3 +1,7 @@
 node_modules/
 dist/
 *.log
+
+# Script output dirs (raw API captures, rendered overlays)
+scripts/llamaparse-output/
+scripts/bbox-detect-output/

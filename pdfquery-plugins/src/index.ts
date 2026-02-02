@@ -31,8 +31,8 @@ export { vlmOpenRouter, highlightRegion, cropImage } from './vlm-openrouter';
 export type { VLMOpenRouterConfig } from './vlm-openrouter';
 
 // LlamaParse (LlamaIndex Cloud API)
-export { llamaParse } from './llamaparse';
-export type { LlamaParseConfig } from './llamaparse';
+export { llamaParse, processJsonResult } from './llamaparse';
+export type { LlamaParseConfig, MarkdownPage } from './llamaparse';
 
 // OkraPDF OCR (via OkraPDF API)
 export { okraOcr } from './okra-ocr';

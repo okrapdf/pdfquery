@@ -104,7 +104,7 @@ export function vlmOpenRouter(config: VLMOpenRouterConfig = {}): PDFQueryPlugin 
 
       const handler = async (images: VLMImage[], prompt: string): Promise<string> => {
         const imageContent = await Promise.all(images.map(async ({ image: img, crop }) => {
-          let buf = Buffer.from(img.data);
+          let buf: Buffer<ArrayBufferLike> = Buffer.from(img.data);
 
           // Draw bounding box highlight on full page (additive, not destructive)
           if (crop) {
