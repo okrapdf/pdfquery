@@ -93,8 +93,8 @@
       "page": 1,
       "blocks": [
         { "text": "INVOICE", "bbox": { "x": 0.4, "y": 0.05, "width": 0.2, "height": 0.05 }, "confidence": 0.99 },
-        { "text": "OkraPDF Inc.", "bbox": { "x": 0.05, "y": 0.1, "width": 0.25, "height": 0.03 }, "confidence": 0.98 },
-        { "text": "123 AI Street, San Francisco, CA 94105", "bbox": { "x": 0.05, "y": 0.13, "width": 0.35, "height": 0.025 }, "confidence": 0.97 },
+        { "text": "Example Processing Co.", "bbox": { "x": 0.05, "y": 0.1, "width": 0.3, "height": 0.03 }, "confidence": 0.98 },
+        { "text": "123 Example Street, Example City, CA 90000", "bbox": { "x": 0.05, "y": 0.13, "width": 0.4, "height": 0.025 }, "confidence": 0.97 },
         { "text": "Bill To:", "bbox": { "x": 0.05, "y": 0.22, "width": 0.1, "height": 0.025 }, "confidence": 0.98 },
         { "text": "Acme Corporation", "bbox": { "x": 0.05, "y": 0.25, "width": 0.2, "height": 0.025 }, "confidence": 0.97 },
         { "text": "456 Business Ave, New York, NY 10001", "bbox": { "x": 0.05, "y": 0.28, "width": 0.35, "height": 0.025 }, "confidence": 0.96 },
@@ -102,7 +102,7 @@
         { "text": "Date: January 15, 2025", "bbox": { "x": 0.65, "y": 0.13, "width": 0.25, "height": 0.025 }, "confidence": 0.98 },
         { "text": "Due Date: February 14, 2025", "bbox": { "x": 0.65, "y": 0.16, "width": 0.28, "height": 0.025 }, "confidence": 0.97 }
       ],
-      "content": "# INVOICE\n\n**OkraPDF Inc.**\n123 AI Street, San Francisco, CA 94105\n\n**Bill To:**\nAcme Corporation\n456 Business Ave, New York, NY 10001\n\nInvoice Number: INV-2025-0042\nDate: January 15, 2025\nDue Date: February 14, 2025"
+      "content": "# INVOICE\n\n**Example Processing Co.**\n123 Example Street, Example City, CA 90000\n\n**Bill To:**\nAcme Corporation\n456 Business Ave, New York, NY 10001\n\nInvoice Number: INV-2025-0042\nDate: January 15, 2025\nDue Date: February 14, 2025"
     }
   ]
 }

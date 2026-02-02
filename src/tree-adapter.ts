@@ -6,6 +6,7 @@ import type {
   EntityType,
   EntityMeta,
 } from './types';
+import type { Tag } from './tag';
 
 interface InspectorBbox {
   x: number;
@@ -30,13 +31,16 @@ export interface InspectorTreeNode {
 export interface TreeAdapterOptions {
   docId?: string;
   includeOcrBlocks?: boolean;
+  includeStructuralNodes?: boolean;
   defaultConfidence?: number;
 }
 
 const TYPE_MAP: Record<string, EntityType> = {
   'table': 'table',
   'figure': 'figure',
-  'ocr-block': 'ocr',
+  'ocr': 'ocr',           // Preserve 'ocr'
+  'ocr-block': 'ocr',     // Map 'ocr-block' to 'ocr' for backwards compat
+  'page': 'page',         // Preserve 'page' for structural queries
   'footnote': 'footnote',
   'summary': 'markdown',
   'heading': 'header',
@@ -48,7 +52,8 @@ const TYPE_MAP: Record<string, EntityType> = {
 };
 
 function mapType(inspectorType: string): EntityType {
-  return TYPE_MAP[inspectorType] || 'unknown';
+  // Preserve the original type if not in the map
+  return TYPE_MAP[inspectorType] || (inspectorType as EntityType);
 }
 
 function convertBbox(bbox: InspectorBbox): BoundingBox {
@@ -83,17 +88,50 @@ function flattenTree(
   options: TreeAdapterOptions
 ): VirtualEntity[] {
   const entities: VirtualEntity[] = [];
-  const { includeOcrBlocks = true, defaultConfidence = 0.9 } = options;
+  const {
+    includeOcrBlocks = true,
+    includeStructuralNodes = false,
+    defaultConfidence = 0.9
+  } = options;
 
   const traverse = (n: InspectorTreeNode) => {
-    const isStructuralNode = n.type === 'document' || n.type === 'page';
-    const isOcrBlock = n.type === 'ocr-block';
-    
-    if (!isStructuralNode && n.bbox) {
-      if (isOcrBlock && !includeOcrBlocks) {
-        return;
-      }
+    const isDocumentNode = n.type === 'document';
+    const isPageNode = n.type === 'page';
+    const isOcrNode = n.type === 'ocr' || n.type === 'ocr-block';
 
+    // Always skip document root node
+    if (isDocumentNode) {
+      n.children.forEach(traverse);
+      return;
+    }
+
+    // Include page nodes only if includeStructuralNodes is true
+    if (isPageNode) {
+      if (includeStructuralNodes) {
+        // Create a synthetic bbox for page nodes if they don't have one
+        const pageBbox = n.bbox || { x: 0, y: 0, width: 1, height: 1 };
+        entities.push({
+          id: n.id,
+          type: mapType(n.type),
+          text: n.textContent || '',
+          bbox: convertBbox(pageBbox),
+          pageIndex: n.page - 1,
+          meta: createEntityMeta(n, defaultConfidence),
+          _data: n.data,
+        });
+      }
+      n.children.forEach(traverse);
+      return;
+    }
+
+    // Skip ocr nodes if includeOcrBlocks is false
+    if (isOcrNode && !includeOcrBlocks) {
+      n.children.forEach(traverse);
+      return;
+    }
+
+    // For all other nodes, include them if they have a bbox
+    if (n.bbox) {
       entities.push({
         id: n.id,
         type: mapType(n.type),
@@ -145,6 +183,86 @@ function createPageMeta(entities: VirtualEntity[]) {
   };
 }
 
+/**
+ * Convert an inspector tree into Tag[].
+ *
+ * This is the preferred entry point — feed the resulting tags into
+ * `pdfquery.ready({ tags })` or `session.addTags(tags)`.
+ */
+export function treeToTags(
+  tree: InspectorTreeNode,
+  options: TreeAdapterOptions = {},
+): Tag[] {
+  const {
+    includeOcrBlocks = true,
+    includeStructuralNodes = false,
+    defaultConfidence = 0.9,
+  } = options;
+
+  const tags: Tag[] = [];
+
+  const traverse = (n: InspectorTreeNode) => {
+    const isDocumentNode = n.type === 'document';
+    const isPageNode = n.type === 'page';
+    const isOcrNode = n.type === 'ocr' || n.type === 'ocr-block';
+
+    if (isDocumentNode) {
+      n.children.forEach(traverse);
+      return;
+    }
+
+    if (isPageNode) {
+      if (includeStructuralNodes) {
+        const bbox = n.bbox || { x: 0, y: 0, width: 1, height: 1 };
+        tags.push({
+          id: n.id,
+          type: mapType(n.type),
+          page: n.page,
+          bbox,
+          text: n.textContent || '',
+          attrs: {
+            confidence: typeof n.attributes['data-confidence'] === 'number'
+              ? n.attributes['data-confidence']
+              : defaultConfidence,
+            ...n.data,
+          },
+        });
+      }
+      n.children.forEach(traverse);
+      return;
+    }
+
+    if (isOcrNode && !includeOcrBlocks) {
+      n.children.forEach(traverse);
+      return;
+    }
+
+    if (n.bbox) {
+      tags.push({
+        id: n.id,
+        type: mapType(n.type),
+        page: n.page,
+        bbox: n.bbox,
+        text: n.textContent || '',
+        attrs: {
+          confidence: typeof n.attributes['data-confidence'] === 'number'
+            ? n.attributes['data-confidence']
+            : defaultConfidence,
+          ...n.data,
+        },
+      });
+    }
+
+    n.children.forEach(traverse);
+  };
+
+  traverse(tree);
+  return tags;
+}
+
+/**
+ * @deprecated Use `treeToTags()` and feed result into `pdfquery.ready({ tags })`.
+ */
 export function treeToVirtualDoc(
   tree: InspectorTreeNode,
   options: TreeAdapterOptions = {}

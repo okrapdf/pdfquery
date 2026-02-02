@@ -11,7 +11,7 @@ import docaiSample from './fixtures/docai-sample.json';
 import azureSample from './fixtures/azure-sample.json';
 import tesseractSample from './fixtures/tesseract-sample.json';
 import unstructuredSample from './fixtures/unstructured-sample.json';
-import unstructuredRealOutput from './fixtures/unstructured-real-output.json';
+import unstructuredReal from './fixtures/unstructured-real.json';
 import doclingSample from './fixtures/docling-sample.json';
 
 function assertNormalized(val: number, name: string) {
@@ -146,20 +146,21 @@ describe('fromUnstructured', () => {
     expect(table.markdown).toContain('$1M');
   });
 
-  it('parses real SDK output (layout-parser-paper-fast.pdf)', () => {
-    const result = fromUnstructured(unstructuredRealOutput as unknown as UnstructuredElement[]);
+  it('handles real Unstructured output with PixelSpace coords', () => {
+    const result = fromUnstructured(unstructuredReal as unknown as UnstructuredElement[]);
     
-    expect(result.pageCount).toBe(2);
-    expect(result.blocks.length).toBe(25);
-    expect(result.tables.length).toBe(0);
+    expect(result.pageCount).toBe(1);
+    expect(result.blocks.length).toBe(2);
+    expect(result.tables.length).toBe(1);
     
     for (const block of result.blocks) {
       assertBboxNormalized(block.bbox);
     }
-
-    const title = result.blocks.find(b => b.text.includes('LayoutParser'));
-    expect(title).toBeDefined();
-    expect(title!.text).toContain('Deep Learning');
+    
+    for (const table of result.tables) {
+      assertBboxNormalized(table.bbox);
+      expect(table.confidence).toBeGreaterThan(0);
+    }
   });
 });
 

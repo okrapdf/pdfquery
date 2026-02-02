@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { VdomJsxPanel, VdomConsole } from './pdfquery-ui';
 import type { VdomTreeNode, ConsoleContext } from './pdfquery-ui';
 import { createQueryEngine, treeToVirtualDoc } from 'pdfquery';
-import fixtureData from '../../fixtures/amazon-2019-10k.json';
+import fixtureData from '../../fixtures/financial-report.json';
 
 // Convert fixture data to VDOM tree
 function fixtureToVdomTree(fixture: any): VdomTreeNode {
@@ -68,12 +68,10 @@ export default function App() {
     $$: (selector: string) => pdfQuery?.(selector),
     doc: vdomTree,
     currentPage,
-    page: (n: number) => {
-      return pdfQuery?.(selector => selector).onPage(n);
-    },
+    page: (n: number) => pdfQuery?.('*').onPage(n),
   }), [pdfQuery, vdomTree, currentPage]);
 
-  const handleNodeClick = (id: string, page: number, bbox?: any) => {
+  const handleNodeClick = (id: string) => {
     setSelectedId(id);
     setHighlightedIds([id]);
   };
@@ -93,7 +91,7 @@ export default function App() {
             </p>
           </div>
           <a
-            href="https://github.com/okrapdf/pdfquery"
+            href="https://github.com/pdfquery/pdfquery"
             className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium"
             target="_blank"
             rel="noopener noreferrer"

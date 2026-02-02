@@ -27,6 +27,8 @@
 export type EntityType =
   // Page-level extractions (flat, no nesting between these)
   | 'ocr'             // Raw OCR text block
+  | 'ocr-block'       // Raw OCR text block (alias for 'ocr')
+  | 'page'            // Page structural node
   | 'table'           // Markdown table
   | 'figure'          // Chart, image, diagram
   | 'footnote'        // Footnote/endnote
@@ -202,6 +204,8 @@ export interface VirtualDoc {
   version: number;            // Auto-increment for diffing
   pages: VirtualPage[];
   meta: DocumentMeta;
+  /** Internal — plugin-provided handlers threaded from session artifacts */
+  _artifacts?: Map<string, unknown>;
 }
 
 // ============================================================================
@@ -228,133 +232,22 @@ export interface QueryStats {
 }
 
 // ============================================================================
-// Source Data Types (from existing API)
+// Shared Input Types (for plugins)
 // ============================================================================
 
-export interface SourceTable {
-  id: string;
-  page_number: number;
-  markdown: string;
-  bbox: {
-    xmin: number;
-    ymin: number;
-    xmax: number;
-    ymax: number;
-  };
-  confidence: number | null;
-  verification_status: VerificationStatus;
-  verified_by: string | null;
-  verified_at: string | null;
-  was_corrected?: boolean;
-}
+/** How a PDF is passed to a plugin — buffer, local path, or URL */
+export type PDFInput =
+  | { type: 'buffer'; data: Buffer | Uint8Array }
+  | { type: 'path'; path: string }
+  | { type: 'url'; url: string };
 
-export interface SourceEntity {
-  id: string;
-  field_label: string;
-  field_category: string | null;
-  page_number: number;
-  row_index: number | null;
-  suggested_value: string;
-  suggested_value_numeric: number | null;
-  bounding_box: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  confidence: number;
-  verification_status: VerificationStatus;
-  verified_value: string | null;
-  verified_at: string | null;
-  was_corrected: boolean;
-  flag_reason: string | null;
-  flagged_at: string | null;
-}
-
-/**
- * Unified entity format from /api/ocr/jobs/{id}/entities
- *
- * All entity types (table, figure, footnote) share this base structure.
- * The `type` field discriminates between them.
- */
-export interface SourceExtractedEntity {
-  id: string;
-  type: 'table' | 'figure' | 'footnote' | 'summary' | 'signature' | string;
-  title: string;              // Text content or title
-  page: number;               // 1-based page number
-  bbox: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  // Table-specific fields
-  schema?: string[];          // Column headers for tables
-  isComplete?: boolean;       // Whether table extraction is complete
-  // Figure-specific fields
-  caption?: string;           // Figure caption (separate from title)
-  imageUrl?: string;          // URL to figure image
-  // Common optional fields
-  confidence?: number;
-  verification_status?: VerificationStatus;
-}
-
-/** Raw OCR text block from OCR engine */
-export interface SourceOcr {
-  id: string;
+/** Rasterized page image produced by OCR plugins, consumed by VLM plugins */
+export interface PageImage {
   page: number;
-  text: string;
-  bbox: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  confidence: number;
-  verification_status?: VerificationStatus;
-}
-
-/** LLM vision markdown output for a page */
-export interface SourceMarkdown {
-  id: string;
-  page: number;
-  content: string;            // Raw markdown from LLM vision
-  model?: string;             // e.g., 'gpt-4-vision', 'gemini-pro-vision'
-  confidence?: number;
-  verification_status?: VerificationStatus;
-}
-
-/** Entity counts from API response */
-export interface EntityCounts {
-  tables: number;
-  figures: number;
-  footnotes: number;
-  summaries: number;
-  signatures?: number;
-}
-
-// ============================================================================
-// Compiler Options
-// ============================================================================
-
-export interface CompilerOptions {
-  /** Include raw markdown tables as entities */
-  includeTables?: boolean;
-
-  /** Parse table cells as individual entities */
-  parseTableCells?: boolean;
-
-  /** Auto-detect entity types from text patterns */
-  autoDetectTypes?: boolean;
-
-  /** Document ID to use */
-  documentId?: string;
-
-  /** Document filename */
-  fileName?: string;
-
-  /** Document type (e.g., 'financial_statement') */
-  documentType?: string;
+  data: Buffer | Uint8Array;
+  mimeType: 'image/png' | 'image/jpeg';
+  width: number;
+  height: number;
 }
 
 // ============================================================================
@@ -365,7 +258,7 @@ export interface CompilerOptions {
  * Query configuration - passed by consumers (CLI, API, search filter)
  *
  * @example
- * // CLI: okra-pdf "doc-id" ".table" --top-k=5
+ * // CLI: pdfquery "doc-id" ".table" --top-k=5
  * const config: QueryConfig = {
  *   selector: '.table',
  *   topK: 5,

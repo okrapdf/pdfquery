@@ -2,7 +2,7 @@
 
 jQuery for PDFs. Query extracted document entities with CSS-like selectors.
 
-[**Live Demo / Inspector**](https://okrapdf.com/demo/inspector)
+See `demo/README.md` for running the demo locally or via GitHub Pages.
 
 ```bash
 npm install pdfquery
@@ -210,6 +210,10 @@ $$('.table').stats();
 - `.groupBy(fn)` - Group by key function
 - `.groupByPage()` - Group by page number
 - `.groupByType()` - Group by entity type
+
+### AI / VLM
+- `.vlm(prompt)` - Ask a vision model about the selected elements (needs `vlmOpenRouter` plugin)
+- `.markdown()` - Transform entity to markdown via VLM
 
 ### Rendering
 - `.html()` - Render as HTML

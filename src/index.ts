@@ -1,50 +1,43 @@
 /**
- * Virtual DOM Query Layer (Read-Only)
+ * pdfquery — jQuery for PDFs
  *
- * jQuery for documents. Scriptable query layer for document entities.
+ * Scriptable query layer for document entities.
+ * Feed Tags in, query with $.
  *
  * Structure: Document → Page[] → Entity[] (flat, no nesting)
  *
  * @example
- * const doc = compileDocument(tables, entities);
- * const $$ = createQueryEngine(doc);
+ * import { pdfquery } from 'pdfquery';
  *
- * // Query like jQuery
- * $$('.currency').stats();
- * $$('[confidence>0.9]').texts();
- * $$('*').onPage(2).countByType();
+ * const tags = [{ id: 't1', type: 'table', page: 1, bbox: { x: 0, y: 0, width: 1, height: 1 }, text: '...' }];
+ * const session = pdfquery.ready({ tags });
+ * session.$('.table').count();
  */
 
-// Types
+// Types (public)
 export type {
-  VirtualDoc,
-  VirtualPage,
-  VirtualEntity,
   EntityType,
-  EntityMeta,
-  BoundingBox,
-  PageMeta,
-  DocumentMeta,
   VerificationStatus,
   Selector,
   QueryStats,
-  // Source types (from DB/API)
-  SourceTable,
-  SourceEntity,
-  SourceExtractedEntity,  // Unified: table, figure, footnote, summary
-  SourceOcr,
-  SourceMarkdown,
-  EntityCounts,
-  CompilerOptions,
-  // Consumer interfaces (for CLI/API/Search)
   QueryConfig,
   QueryResponse,
   QueryResultItem,
   DocumentInfo,
+  PDFInput,
+  PageImage,
 } from './types';
 
-// Compiler
-export { DocCompiler, createCompiler, compileDocument } from './compiler';
+// Types (internal plumbing — needed by tree-adapter consumers & interop)
+export type {
+  VirtualDoc,
+  VirtualPage,
+  VirtualEntity,
+  BoundingBox,
+  EntityMeta,
+  PageMeta,
+  DocumentMeta,
+} from './types';
 
 // Query layer
 export {
@@ -52,50 +45,55 @@ export {
   createQueryEngine,
   queryPage,
   queryPages,
-  // Config-based query (for CLI/API/Search consumers)
   executeQuery,
   formatQueryResponse,
 } from './query';
 export type {
   QueryEngine,
   RenderOptions,
-  // Mutation tracking types
   EntityChange,
   MutationLog,
+  VLMCallHandler,
+  VLMImage,
 } from './query';
 
-// Source adapters (normalize API responses → compiler input)
-export {
-  fromEntitiesApi,
-  fromPageApiBlocks,
-  fromPageApiMarkdown,
-  fromPageApiTables,
-  fetchEntities,
-  fetchPage,
-  fetchPages,
-  loadEntitiesFromFile,
-  loadPageFromFile,
-} from './sources';
-export type {
-  EntitiesApiResponse,
-  PageApiResponse,
-  ApiEntity,
-  ApiBlock,
-} from './sources';
-
-// Tree adapter (Inspector tree → VirtualDoc)
-export { treeToVirtualDoc, getPageCount } from './tree-adapter';
+// Tree adapter (Inspector tree → Tags / VirtualDoc)
+export { treeToTags, treeToVirtualDoc, getPageCount } from './tree-adapter';
 export type { InspectorTreeNode, TreeAdapterOptions } from './tree-adapter';
 
 // Sample fixtures (zero-dependency demos)
 export {
   fixtures,
   loadFixture,
+  loadFixtureTags,
   compileFixture,
   listFixtures,
   getFixture,
 } from './fixtures';
 export type { FixtureData, FixtureName } from './fixtures';
 
-// Vendor adapters (normalize OCR vendor output → compiler input)
+// Vendor adapters (normalize OCR vendor output → AdapterResult)
 export * from './adapters';
+
+// Session API (jQuery-like lifecycle — primary entry point)
+export { default as pdfquery, PDFQuerySession } from './session';
+
+// Tag model
+export { buildTagTree, computeCoverage, findOrphans } from './tag';
+export type { Tag, BBox, TagTreeNode, PageData } from './tag';
+
+// Tag utilities (type detection, value parsing, table expansion)
+export {
+  detectEntityType,
+  parseValue,
+  parseMarkdownTable,
+  enrichTag,
+  expandTableTag,
+} from './tag-utils';
+
+// Plugin system
+export { registerPlugin, resolveOrder, runPlugins } from './plugin';
+export type { PDFQueryPlugin, PluginContext, PluginResult, PluginRunnerOptions } from './plugin';
+
+// Event emitter
+export { PDFEventEmitter } from './events';

@@ -1,13 +1,13 @@
 # PDFQuery Demo
 
-Standalone demo for HN launch at `okrapdf.github.io/pdfquery`.
+Standalone demo for PDFQuery.
 
 ## Features
 
 - Document Tree visualization
 - Interactive query console
 - No backend required - runs entirely in browser
-- Static fixture data (Amazon 2019 10-K)
+- Static fixture data (financial report sample)
 
 ## Development
 
@@ -26,4 +26,4 @@ Output goes to `dist/` folder.
 
 ## Deploy to GitHub Pages
 
-Build output is deployed to `okrapdf.github.io/pdfquery` via GitHub Actions.
+Build output is deployed to GitHub Pages via GitHub Actions.

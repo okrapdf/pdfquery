@@ -32,7 +32,19 @@ import type {
   QueryResultItem,
   TransformationResult,
   EntityDataStore,
+  BoundingBox,
+  PageImage,
 } from './types';
+
+/** A page image with optional crop region for VLM queries */
+export interface VLMImage {
+  image: PageImage;
+  /** Normalized 0-1 crop region within the page. Omitted for full-page selections. */
+  crop?: { xmin: number; ymin: number; xmax: number; ymax: number };
+}
+
+/** Handler function provided by VLM plugins via artifacts */
+export type VLMCallHandler = (images: VLMImage[], prompt: string) => Promise<string>;
 
 // ============================================================================
 // QueryResult Class
@@ -63,6 +75,9 @@ export class QueryResult {
   readonly length: number;
   private doc: VirtualDoc;
   private mutationLog: EntityChange[] = [];
+
+  /** CSS properties set via .css(), applied to crop in .vlm() */
+  private _cssProps: Record<string, string | number> = {};
 
   constructor(entities: VirtualEntity[], doc: VirtualDoc) {
     this.elements = entities;
@@ -246,6 +261,312 @@ export class QueryResult {
       }),
       this.doc
     );
+  }
+
+  // ==========================================================================
+  // SPATIAL QUERIES
+  // ==========================================================================
+
+  /**
+   * Find entities near the current selection within a given distance.
+   *
+   * Distance is calculated from center points of bounding boxes.
+   * Coordinates are normalized 0-1, so distance 0.1 = 10% of page dimension.
+   *
+   * @param distance - Maximum distance (0-1 normalized). Default 0.1 (10% of page)
+   * @param options - Optional filtering: samePageOnly (default true)
+   *
+   * @example
+   * // Find all entities within 10% distance of tables
+   * $$('.table').near(0.1)
+   *
+   * // Find entities near currency values
+   * $$('.currency:first').near(0.05)
+   */
+  near(distance: number = 0.1, options?: { samePageOnly?: boolean }): QueryResult {
+    const { samePageOnly = true } = options ?? {};
+
+    if (this.elements.length === 0) {
+      return new QueryResult([], this.doc);
+    }
+
+    // Get all entities from the document
+    const allEntities = this.doc.pages.flatMap(p => p.entities);
+    const sourceIds = new Set(this.elements.map(e => e.id));
+
+    // Find entities near any of the source entities
+    const nearbyIds = new Set<string>();
+
+    for (const source of this.elements) {
+      const sourceCenter = bboxCenter(source.bbox);
+
+      for (const target of allEntities) {
+        // Skip self
+        if (sourceIds.has(target.id)) continue;
+        // Skip if already found
+        if (nearbyIds.has(target.id)) continue;
+        // Skip if different page and samePageOnly
+        if (samePageOnly && source.pageIndex !== target.pageIndex) continue;
+
+        const targetCenter = bboxCenter(target.bbox);
+        const dist = euclideanDistance(sourceCenter, targetCenter);
+
+        if (dist <= distance) {
+          nearbyIds.add(target.id);
+        }
+      }
+    }
+
+    const nearby = allEntities.filter(e => nearbyIds.has(e.id));
+    return new QueryResult(nearby, this.doc);
+  }
+
+  /**
+   * Find entities above the current selection.
+   *
+   * "Above" means the target's bottom edge is above the source's top edge.
+   * Optionally filter by horizontal overlap.
+   *
+   * @param options - maxDistance (default 0.2), requireOverlap (default false), samePageOnly (default true)
+   *
+   * @example
+   * // Find labels above a table
+   * $$('.table:first').above()
+   *
+   * // Find headers directly above (with horizontal overlap)
+   * $$('.currency').above({ requireOverlap: true })
+   */
+  above(options?: {
+    maxDistance?: number;
+    requireOverlap?: boolean;
+    samePageOnly?: boolean;
+  }): QueryResult {
+    const { maxDistance = 0.2, requireOverlap = false, samePageOnly = true } = options ?? {};
+
+    if (this.elements.length === 0) {
+      return new QueryResult([], this.doc);
+    }
+
+    const allEntities = this.doc.pages.flatMap(p => p.entities);
+    const sourceIds = new Set(this.elements.map(e => e.id));
+    const aboveIds = new Set<string>();
+
+    for (const source of this.elements) {
+      for (const target of allEntities) {
+        if (sourceIds.has(target.id)) continue;
+        if (aboveIds.has(target.id)) continue;
+        if (samePageOnly && source.pageIndex !== target.pageIndex) continue;
+
+        // Target's bottom must be above source's top
+        if (target.bbox.ymax > source.bbox.ymin) continue;
+
+        // Check distance
+        const verticalDist = source.bbox.ymin - target.bbox.ymax;
+        if (verticalDist > maxDistance) continue;
+
+        // Check horizontal overlap if required
+        if (requireOverlap && !hasHorizontalOverlap(source.bbox, target.bbox)) continue;
+
+        aboveIds.add(target.id);
+      }
+    }
+
+    const above = allEntities.filter(e => aboveIds.has(e.id));
+    return new QueryResult(above, this.doc);
+  }
+
+  /**
+   * Find entities below the current selection.
+   *
+   * "Below" means the target's top edge is below the source's bottom edge.
+   *
+   * @param options - maxDistance (default 0.2), requireOverlap (default false), samePageOnly (default true)
+   *
+   * @example
+   * // Find totals below a table
+   * $$('.table:first').below()
+   *
+   * // Find footnotes below figures
+   * $$('.figure').below({ maxDistance: 0.1 })
+   */
+  below(options?: {
+    maxDistance?: number;
+    requireOverlap?: boolean;
+    samePageOnly?: boolean;
+  }): QueryResult {
+    const { maxDistance = 0.2, requireOverlap = false, samePageOnly = true } = options ?? {};
+
+    if (this.elements.length === 0) {
+      return new QueryResult([], this.doc);
+    }
+
+    const allEntities = this.doc.pages.flatMap(p => p.entities);
+    const sourceIds = new Set(this.elements.map(e => e.id));
+    const belowIds = new Set<string>();
+
+    for (const source of this.elements) {
+      for (const target of allEntities) {
+        if (sourceIds.has(target.id)) continue;
+        if (belowIds.has(target.id)) continue;
+        if (samePageOnly && source.pageIndex !== target.pageIndex) continue;
+
+        // Target's top must be below source's bottom
+        if (target.bbox.ymin < source.bbox.ymax) continue;
+
+        // Check distance
+        const verticalDist = target.bbox.ymin - source.bbox.ymax;
+        if (verticalDist > maxDistance) continue;
+
+        // Check horizontal overlap if required
+        if (requireOverlap && !hasHorizontalOverlap(source.bbox, target.bbox)) continue;
+
+        belowIds.add(target.id);
+      }
+    }
+
+    const below = allEntities.filter(e => belowIds.has(e.id));
+    return new QueryResult(below, this.doc);
+  }
+
+  /**
+   * Find entities to the left of the current selection.
+   *
+   * "Left" means the target's right edge is to the left of the source's left edge.
+   *
+   * @param options - maxDistance (default 0.15), requireOverlap (default false), samePageOnly (default true)
+   *
+   * @example
+   * // Find labels to the left of values
+   * $$('.currency').leftOf()
+   *
+   * // Find row headers
+   * $$('.table_cell').leftOf({ requireOverlap: true })
+   */
+  leftOf(options?: {
+    maxDistance?: number;
+    requireOverlap?: boolean;
+    samePageOnly?: boolean;
+  }): QueryResult {
+    const { maxDistance = 0.15, requireOverlap = false, samePageOnly = true } = options ?? {};
+
+    if (this.elements.length === 0) {
+      return new QueryResult([], this.doc);
+    }
+
+    const allEntities = this.doc.pages.flatMap(p => p.entities);
+    const sourceIds = new Set(this.elements.map(e => e.id));
+    const leftIds = new Set<string>();
+
+    for (const source of this.elements) {
+      for (const target of allEntities) {
+        if (sourceIds.has(target.id)) continue;
+        if (leftIds.has(target.id)) continue;
+        if (samePageOnly && source.pageIndex !== target.pageIndex) continue;
+
+        // Target's right must be to the left of source's left
+        if (target.bbox.xmax > source.bbox.xmin) continue;
+
+        // Check distance
+        const horizontalDist = source.bbox.xmin - target.bbox.xmax;
+        if (horizontalDist > maxDistance) continue;
+
+        // Check vertical overlap if required
+        if (requireOverlap && !hasVerticalOverlap(source.bbox, target.bbox)) continue;
+
+        leftIds.add(target.id);
+      }
+    }
+
+    const left = allEntities.filter(e => leftIds.has(e.id));
+    return new QueryResult(left, this.doc);
+  }
+
+  /**
+   * Find entities to the right of the current selection.
+   *
+   * "Right" means the target's left edge is to the right of the source's right edge.
+   *
+   * @param options - maxDistance (default 0.15), requireOverlap (default false), samePageOnly (default true)
+   *
+   * @example
+   * // Find values to the right of labels
+   * $$('.label').rightOf()
+   *
+   * // Find adjacent cells
+   * $$('.table_cell:first').rightOf({ requireOverlap: true })
+   */
+  rightOf(options?: {
+    maxDistance?: number;
+    requireOverlap?: boolean;
+    samePageOnly?: boolean;
+  }): QueryResult {
+    const { maxDistance = 0.15, requireOverlap = false, samePageOnly = true } = options ?? {};
+
+    if (this.elements.length === 0) {
+      return new QueryResult([], this.doc);
+    }
+
+    const allEntities = this.doc.pages.flatMap(p => p.entities);
+    const sourceIds = new Set(this.elements.map(e => e.id));
+    const rightIds = new Set<string>();
+
+    for (const source of this.elements) {
+      for (const target of allEntities) {
+        if (sourceIds.has(target.id)) continue;
+        if (rightIds.has(target.id)) continue;
+        if (samePageOnly && source.pageIndex !== target.pageIndex) continue;
+
+        // Target's left must be to the right of source's right
+        if (target.bbox.xmin < source.bbox.xmax) continue;
+
+        // Check distance
+        const horizontalDist = target.bbox.xmin - source.bbox.xmax;
+        if (horizontalDist > maxDistance) continue;
+
+        // Check vertical overlap if required
+        if (requireOverlap && !hasVerticalOverlap(source.bbox, target.bbox)) continue;
+
+        rightIds.add(target.id);
+      }
+    }
+
+    const right = allEntities.filter(e => rightIds.has(e.id));
+    return new QueryResult(right, this.doc);
+  }
+
+  /**
+   * Find entities within a bounding box region.
+   *
+   * @param bbox - Bounding box {xmin, ymin, xmax, ymax} or {x, y, width, height} (0-1 normalized)
+   * @param options - mode: 'intersects' (default) or 'contains' (fully inside), samePageOnly (default false)
+   *
+   * @example
+   * // Find all entities in the top-left quadrant of page 1
+   * $$('*').onPage(1).within({ xmin: 0, ymin: 0, xmax: 0.5, ymax: 0.5 })
+   *
+   * // Find entities in a specific region (must be fully contained)
+   * $$('.currency').within({ x: 0.7, y: 0.5, width: 0.25, height: 0.2 }, { mode: 'contains' })
+   */
+  within(
+    bbox: { xmin: number; ymin: number; xmax: number; ymax: number } |
+          { x: number; y: number; width: number; height: number },
+    options?: { mode?: 'intersects' | 'contains' }
+  ): QueryResult {
+    const { mode = 'intersects' } = options ?? {};
+
+    // Normalize bbox to xmin/ymin/xmax/ymax format
+    const normalizedBbox = 'xmin' in bbox
+      ? bbox
+      : { xmin: bbox.x, ymin: bbox.y, xmax: bbox.x + bbox.width, ymax: bbox.y + bbox.height };
+
+    const filtered = this.elements.filter(entity => {
+      if (mode === 'contains') {
+        return bboxContains(normalizedBbox, entity.bbox);
+      }
+      return bboxIntersects(normalizedBbox, entity.bbox);
+    });
+
+    return new QueryResult(filtered, this.doc);
   }
 
   // ==========================================================================
@@ -838,11 +1159,11 @@ export class QueryResult {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OkraPDF Document</title>
+  <title>PDFQuery Document</title>
   <style>${getDefaultStyles()}</style>
 </head>
 <body>
-  <div class="okra-document">
+  <div class="pdfquery-document">
     ${body}
   </div>
 </body>
@@ -858,9 +1179,9 @@ export class QueryResult {
 
     for (const [pageNum, group] of byPage) {
       pages.push(`
-        <div class="okra-page" data-page="${pageNum}">
-          <div class="okra-page-header">Page ${pageNum}</div>
-          <div class="okra-page-content">
+        <div class="pdfquery-page" data-page="${pageNum}">
+          <div class="pdfquery-page-header">Page ${pageNum}</div>
+          <div class="pdfquery-page-content">
             ${group.html(options)}
           </div>
         </div>
@@ -958,6 +1279,143 @@ export class QueryResult {
       return entity.text || '';
     }
   }
+
+  /**
+   * Set CSS properties on this selection, applied to crop region in .vlm().
+   *
+   * Supports `margin` (px) using CSS shorthand:
+   *   .css({ margin: 20 })             → 20px all sides
+   *   .css({ margin: '10px 20px' })    → 10/20 vertical/horizontal
+   *   .css({ margin: '10px 20px 30px 40px' }) → top right bottom left
+   *
+   * @example
+   * await $$('table').css({ margin: 20 }).vlm('extract amounts')
+   */
+  css(props: Record<string, string | number>): this {
+    this._cssProps = { ...this._cssProps, ...props };
+    return this;
+  }
+
+  /** Get CSS properties set via .css() */
+  getCss(): Record<string, string | number> {
+    return { ...this._cssProps };
+  }
+
+  /**
+   * Query selected elements with a vision language model.
+   *
+   * Resolves relevant page images from artifacts and sends them
+   * along with the prompt to a VLM handler registered by a plugin.
+   *
+   * @example
+   * await $$('page:first').vlm('what is this page about?')
+   * await $$('table').css('margin: 20px').vlm('extract amounts')
+   */
+  async vlm(prompt: string): Promise<string> {
+    const artifacts = this.doc._artifacts;
+    const handler = artifacts?.get('vlm:call') as VLMCallHandler | undefined;
+    if (!handler) throw new Error('vlm plugin not loaded — add vlmOpenRouter() to your plugins');
+
+    const pageImages = artifacts?.get('pages:images') as PageImage[] | undefined;
+    if (!pageImages?.length) throw new Error('No page images — use extractImages: true in your OCR plugin');
+
+    // Group elements by page, compute union bbox per page
+    const byPage = new Map<number, BoundingBox>();
+    const isPageSelection = this.elements.every(e => e.type === 'page');
+
+    for (const el of this.elements) {
+      const existing = byPage.get(el.pageIndex);
+      if (!existing) {
+        byPage.set(el.pageIndex, { ...el.bbox });
+      } else {
+        // Expand to union bbox
+        existing.xmin = Math.min(existing.xmin, el.bbox.xmin);
+        existing.ymin = Math.min(existing.ymin, el.bbox.ymin);
+        existing.xmax = Math.max(existing.xmax, el.bbox.xmax);
+        existing.ymax = Math.max(existing.ymax, el.bbox.ymax);
+      }
+    }
+
+    // Parse margin from .css({ margin }) if set
+    const margin = parseMarginShorthand(this._cssProps.margin);
+
+    const vlmImages: VLMImage[] = [];
+    for (const [pageIndex, unionBbox] of byPage) {
+      const img = pageImages.find(i => i.page === pageIndex + 1);
+      if (!img) continue;
+
+      let crop: VLMImage['crop'];
+      if (!isPageSelection) {
+        // Convert px margin to normalized 0-1 using actual image dimensions
+        crop = {
+          xmin: Math.max(0, unionBbox.xmin - margin.left / img.width),
+          ymin: Math.max(0, unionBbox.ymin - margin.top / img.height),
+          xmax: Math.min(1, unionBbox.xmax + margin.right / img.width),
+          ymax: Math.min(1, unionBbox.ymax + margin.bottom / img.height),
+        };
+      }
+
+      vlmImages.push({ image: img, crop });
+    }
+
+    if (vlmImages.length === 0) throw new Error('No images found for selected pages');
+
+    return handler(vlmImages, prompt);
+  }
+}
+
+// ============================================================================
+// Spatial Query Helpers
+// ============================================================================
+
+/** Parse CSS margin shorthand into {top, right, bottom, left} in px. */
+function parseMarginShorthand(value: string | number | undefined): { top: number; right: number; bottom: number; left: number } {
+  const zero = { top: 0, right: 0, bottom: 0, left: 0 };
+  if (value == null) return zero;
+
+  // Single number → all sides
+  if (typeof value === 'number') return { top: value, right: value, bottom: value, left: value };
+
+  // Parse "20px" or "10px 20px" or "10px 20px 30px 40px"
+  const parts = String(value).trim().split(/\s+/).map(s => parseFloat(s));
+  if (parts.length === 0 || parts.some(isNaN)) return zero;
+
+  if (parts.length === 1) return { top: parts[0], right: parts[0], bottom: parts[0], left: parts[0] };
+  if (parts.length === 2) return { top: parts[0], right: parts[1], bottom: parts[0], left: parts[1] };
+  if (parts.length === 3) return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[1] };
+  return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[3] };
+}
+
+function bboxCenter(bbox: BoundingBox): { x: number; y: number } {
+  return {
+    x: (bbox.xmin + bbox.xmax) / 2,
+    y: (bbox.ymin + bbox.ymax) / 2,
+  };
+}
+
+function euclideanDistance(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+function hasHorizontalOverlap(a: BoundingBox, b: BoundingBox): boolean {
+  return a.xmin < b.xmax && a.xmax > b.xmin;
+}
+
+function hasVerticalOverlap(a: BoundingBox, b: BoundingBox): boolean {
+  return a.ymin < b.ymax && a.ymax > b.ymin;
+}
+
+function bboxContains(outer: BoundingBox, inner: BoundingBox): boolean {
+  return (
+    inner.xmin >= outer.xmin &&
+    inner.xmax <= outer.xmax &&
+    inner.ymin >= outer.ymin &&
+    inner.ymax <= outer.ymax
+  );
+}
+
+function bboxIntersects(a: BoundingBox, b: BoundingBox): boolean {
+  return hasHorizontalOverlap(a, b) && hasVerticalOverlap(a, b);
 }
 
 // ============================================================================
@@ -973,42 +1431,42 @@ export interface RenderOptions {
   showStatus?: boolean;
   /** Render tables as actual HTML tables (not markdown) */
   renderTables?: boolean;
-  /** Custom class prefix (default: 'okra') */
+  /** Custom class prefix (default: 'pdfquery') */
   classPrefix?: string;
 }
 
 function getDefaultStyles(): string {
   return `
-    .okra-document { font-family: system-ui, sans-serif; padding: 20px; }
-    .okra-page { border: 1px solid #e0e0e0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-    .okra-page-header { background: #f5f5f5; padding: 8px 16px; font-weight: 600; border-bottom: 1px solid #e0e0e0; }
-    .okra-page-content { padding: 16px; }
-    .okra-entity { margin: 8px 0; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #ccc; background: #fafafa; }
-    .okra-entity.type-table { border-left-color: #2196f3; background: #e3f2fd; }
-    .okra-entity.type-currency { border-left-color: #4caf50; background: #e8f5e9; }
-    .okra-entity.type-percentage { border-left-color: #ff9800; background: #fff3e0; }
-    .okra-entity.type-date { border-left-color: #9c27b0; background: #f3e5f5; }
-    .okra-entity.type-header { border-left-color: #607d8b; background: #eceff1; font-weight: 600; }
-    .okra-entity.type-footnote { border-left-color: #795548; background: #efebe9; font-size: 0.9em; font-style: italic; }
-    .okra-entity.type-figure { border-left-color: #e91e63; background: #fce4ec; }
-    .okra-entity.status-verified { box-shadow: inset 0 0 0 1px #4caf50; }
-    .okra-entity.status-flagged { box-shadow: inset 0 0 0 1px #f44336; }
-    .okra-entity.status-pending { box-shadow: inset 0 0 0 1px #ff9800; }
-    .okra-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; }
-    .okra-badge.confidence { background: #e0e0e0; color: #333; }
-    .okra-badge.confidence.high { background: #c8e6c9; color: #2e7d32; }
-    .okra-badge.confidence.low { background: #ffcdd2; color: #c62828; }
-    .okra-badge.status { text-transform: uppercase; font-weight: 600; }
-    .okra-badge.status.verified { background: #4caf50; color: white; }
-    .okra-badge.status.flagged { background: #f44336; color: white; }
-    .okra-badge.status.pending { background: #ff9800; color: white; }
-    .okra-type { color: #666; font-size: 0.8em; text-transform: uppercase; }
-    .okra-text { margin-top: 4px; }
-    .okra-value { font-family: monospace; background: #f5f5f5; padding: 2px 4px; border-radius: 2px; }
-    .okra-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
-    .okra-table th, .okra-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    .okra-table th { background: #f5f5f5; font-weight: 600; }
-    .okra-table tr:nth-child(even) { background: #fafafa; }
+    .pdfquery-document { font-family: system-ui, sans-serif; padding: 20px; }
+    .pdfquery-page { border: 1px solid #e0e0e0; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
+    .pdfquery-page-header { background: #f5f5f5; padding: 8px 16px; font-weight: 600; border-bottom: 1px solid #e0e0e0; }
+    .pdfquery-page-content { padding: 16px; }
+    .pdfquery-entity { margin: 8px 0; padding: 8px 12px; border-radius: 4px; border-left: 3px solid #ccc; background: #fafafa; }
+    .pdfquery-entity.type-table { border-left-color: #2196f3; background: #e3f2fd; }
+    .pdfquery-entity.type-currency { border-left-color: #4caf50; background: #e8f5e9; }
+    .pdfquery-entity.type-percentage { border-left-color: #ff9800; background: #fff3e0; }
+    .pdfquery-entity.type-date { border-left-color: #9c27b0; background: #f3e5f5; }
+    .pdfquery-entity.type-header { border-left-color: #607d8b; background: #eceff1; font-weight: 600; }
+    .pdfquery-entity.type-footnote { border-left-color: #795548; background: #efebe9; font-size: 0.9em; font-style: italic; }
+    .pdfquery-entity.type-figure { border-left-color: #e91e63; background: #fce4ec; }
+    .pdfquery-entity.status-verified { box-shadow: inset 0 0 0 1px #4caf50; }
+    .pdfquery-entity.status-flagged { box-shadow: inset 0 0 0 1px #f44336; }
+    .pdfquery-entity.status-pending { box-shadow: inset 0 0 0 1px #ff9800; }
+    .pdfquery-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; }
+    .pdfquery-badge.confidence { background: #e0e0e0; color: #333; }
+    .pdfquery-badge.confidence.high { background: #c8e6c9; color: #2e7d32; }
+    .pdfquery-badge.confidence.low { background: #ffcdd2; color: #c62828; }
+    .pdfquery-badge.status { text-transform: uppercase; font-weight: 600; }
+    .pdfquery-badge.status.verified { background: #4caf50; color: white; }
+    .pdfquery-badge.status.flagged { background: #f44336; color: white; }
+    .pdfquery-badge.status.pending { background: #ff9800; color: white; }
+    .pdfquery-type { color: #666; font-size: 0.8em; text-transform: uppercase; }
+    .pdfquery-text { margin-top: 4px; }
+    .pdfquery-value { font-family: monospace; background: #f5f5f5; padding: 2px 4px; border-radius: 2px; }
+    .pdfquery-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+    .pdfquery-table th, .pdfquery-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    .pdfquery-table th { background: #f5f5f5; font-weight: 600; }
+    .pdfquery-table tr:nth-child(even) { background: #fafafa; }
   `;
 }
 
@@ -1043,7 +1501,7 @@ function parseMarkdownTable(markdown: string): { headers: string[]; rows: string
 
 function renderTableAsHtml(markdown: string): string {
   const parsed = parseMarkdownTable(markdown);
-  if (!parsed) return `<pre class="okra-markdown">${escapeHtml(markdown)}</pre>`;
+  if (!parsed) return `<pre class="pdfquery-markdown">${escapeHtml(markdown)}</pre>`;
 
   const { headers, rows } = parsed;
   const headerHtml = headers.map(h => `<th>${escapeHtml(h)}</th>`).join('');
@@ -1051,7 +1509,7 @@ function renderTableAsHtml(markdown: string): string {
     .map(row => `<tr>${row.map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`)
     .join('\n');
 
-  return `<table class="okra-table">
+  return `<table class="pdfquery-table">
     <thead><tr>${headerHtml}</tr></thead>
     <tbody>${rowsHtml}</tbody>
   </table>`;
@@ -1063,7 +1521,7 @@ function renderEntity(entity: VirtualEntity, options: RenderOptions = {}): strin
     showConfidence = true,
     showStatus = true,
     renderTables = true,
-    classPrefix = 'okra',
+    classPrefix = 'pdfquery',
   } = options;
 
   const classes = [
@@ -1199,8 +1657,15 @@ function parseCompoundSelector(selector: string): string[] {
     } else if (char === '*') {
       parts.push('*');
       i++;
+    } else if (/[\w-]/.test(char)) {
+      let part = char;
+      i++;
+      while (i < selector.length && /[\w-]/.test(selector[i])) {
+        part += selector[i];
+        i++;
+      }
+      parts.push(part);
     } else {
-      // Skip whitespace or unknown chars
       i++;
     }
   }
@@ -1208,16 +1673,17 @@ function parseCompoundSelector(selector: string): string[] {
   return parts;
 }
 
-/**
- * Match a single selector part against an entity.
- */
 function matchesSingleSelector(entity: VirtualEntity, selector: string): boolean {
-  // Universal selector
   if (selector === '*') return true;
 
-  // Type selector: .currency, .table, .text
+  // Type selector with dot: .currency, .table, .text
   if (selector.startsWith('.')) {
     return entity.type === selector.substring(1);
+  }
+
+  // Bare tag selector: table, figure, currency (no dot prefix)
+  if (/^[\w-]+$/.test(selector) && !selector.startsWith('[') && !selector.startsWith(':') && !selector.startsWith('#')) {
+    return entity.type === selector;
   }
 
   // Attribute selector: [verified=true], [confidence>0.9]
