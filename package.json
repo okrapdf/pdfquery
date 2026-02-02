@@ -21,6 +21,10 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "test": "vitest run",
     "test:watch": "vitest",
+    "build:plugins": "pnpm -C pdfquery-plugins build",
+    "test:plugins": "pnpm -C pdfquery-plugins test",
+    "build:all": "pnpm -C pdfquery-plugins build && pnpm run build",
+    "test:all": "pnpm -C pdfquery-plugins test && pnpm run test",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

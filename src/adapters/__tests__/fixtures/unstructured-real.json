@@ -1,0 +1,48 @@
+[
+  {
+    "type": "Title",
+    "element_id": "title-real-1",
+    "text": "Q4 Results",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "points": [[72, 64], [540, 64], [540, 110], [72, 110]],
+        "system": "PixelSpace",
+        "layout_width": 1200,
+        "layout_height": 1600
+      },
+      "detection_class_prob": 0.97
+    }
+  },
+  {
+    "type": "NarrativeText",
+    "element_id": "text-real-1",
+    "text": "Revenue increased 12% year-over-year.",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "points": [[72, 160], [1050, 160], [1050, 210], [72, 210]],
+        "system": "PixelSpace",
+        "layout_width": 1200,
+        "layout_height": 1600
+      },
+      "detection_class_prob": 0.93
+    }
+  },
+  {
+    "type": "Table",
+    "element_id": "table-real-1",
+    "text": "Revenue $12.5B\nExpenses $8.2B",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "points": [[96, 360], [1104, 360], [1104, 760], [96, 760]],
+        "system": "PixelSpace",
+        "layout_width": 1200,
+        "layout_height": 1600
+      },
+      "detection_class_prob": 0.9,
+      "text_as_html": "<table><tr><td>Revenue</td><td>$12.5B</td></tr><tr><td>Expenses</td><td>$8.2B</td></tr></table>"
+    }
+  }
+]

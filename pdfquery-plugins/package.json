@@ -1,0 +1,42 @@
+{
+  "name": "@okrapdf/pdfquery-plugins",
+  "version": "0.1.0",
+  "description": "Data source plugins for pdfquery — OCR, VLM, adapter bridges",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "scripts"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "pdfquery",
+    "plugin",
+    "ocr",
+    "vlm",
+    "pdf"
+  ],
+  "author": "okrapdf",
+  "license": "MIT",
+  "dependencies": {
+    "pdfquery": "workspace:*",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  }
+}

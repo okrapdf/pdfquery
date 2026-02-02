@@ -8,6 +8,37 @@ See `demo/README.md` for running the demo locally or via GitHub Pages.
 npm install pdfquery
 ```
 
+## Plugins (OCR/VLM)
+
+pdfquery is the query engine only. For OCR, VLM, and local PDF tooling, use the plugin package in this repo: `pdfquery-plugins/`.
+
+```bash
+pnpm install
+pnpm -C pdfquery-plugins build
+pnpm -C pdfquery-plugins test
+```
+
+```ts
+import pdfquery from 'pdfquery';
+import { pymupdf, vlmOpenRouter, llamaParse } from '@okrapdf/pdfquery-plugins';
+
+const doc = await pdfquery.load([
+  pymupdf({ pdf: { type: 'path', path: './report.pdf' }, extractImages: true }),
+  vlmOpenRouter(),
+  // or llamaParse({ pdf: { type: 'path', path: './report.pdf' } })
+]);
+
+await doc.$('table').vlm('summarize this table');
+```
+
+Highlights:
+- `pymupdf` (local extraction + optional page images)
+- `vlmOpenRouter` (vision queries with `.vlm()`)
+- `llamaParse` (LlamaIndex Cloud API)
+- `doclingServe`, `okraOcr`, `pageIndex`, adapter bridges
+
+Full docs + examples: `pdfquery-plugins/README.md` and `pdfquery-plugins/examples/`.
+
 ## What This Is (and Isn't)
 
 **pdfquery does NOT parse PDFs.** It takes the **output** of any document processing service and makes it queryable:
