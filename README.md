@@ -150,6 +150,32 @@ $('*').countByPage();          // Map { 1: 53, 2: 29, 3: 21 }
 
 ## Quick Start (With PDF)
 
+Cloud OCR via LlamaParse: `LLAMAINDEX_API_KEY=llx-... npx tsx examples/llamaparse.ts ./report.pdf`
+
+```ts
+import pdfquery from 'pdfquery';
+import { llamaParse } from '@okrapdf/pdfquery-plugins';
+
+const session = pdfquery();
+session.on('llamaparse:uploaded', (_, d) => console.log('job:', d.jobId));
+
+session.use(llamaParse({
+  pdf: { type: 'path', path: './report.pdf' },
+  // targetPages: '1-5',
+}));
+
+const doc = await session.load();
+const $ = doc.$;
+
+$('*').count();                  // total entities
+$('*').countByType();            // Map { heading: 12, table: 4, ocr: 89, ... }
+$('heading').texts();            // all heading text
+$('table').count();              // tables found
+$('*').contains('Revenue').texts(); // text search
+```
+
+Local extraction + VLM queries (no cloud OCR):
+
 ```ts
 import pdfquery from 'pdfquery';
 import { pymupdf, vlmOpenRouter } from '@okrapdf/pdfquery-plugins';
@@ -160,15 +186,7 @@ const doc = await pdfquery.load([
 ]);
 
 const $ = doc.$;
-
-// Count what was extracted
-console.log($('*').count(), 'entities');
-console.log($('table').count(), 'tables');
-
-// Ask the VLM about page 1
 const summary = await $('page:first').vlm('summarize this page in 2 sentences');
-
-// Find revenue figures
 const rev = await $('ocr').contains('revenue').eq(0).vlm('what is the exact revenue figure?');
 ```
 
