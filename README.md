@@ -38,13 +38,13 @@ Every entity has a bounding box. You can query by proximity, direction, or regio
 
 ```ts
 // find the label to the left of each currency value
-$('.currency').leftOf({ requireOverlap: true });
+$('currency').leftOf({ maxDistance: 0.3, requireOverlap: true });
 
 // find footnotes below figures
-$('.figure').below({ maxDistance: 0.1 });
+$('figure').below({ maxDistance: 0.2 });
 
-// find everything near a specific table (within 10% of page)
-$('.table:first').near(0.1);
+// find everything near a specific table (within 15% of page)
+$('table').eq(0).near(0.15);
 
 // find entities in the top-right quadrant of page 1
 $('*').onPage(1).within({ xmin: 0.5, ymin: 0, xmax: 1, ymax: 0.5 });
