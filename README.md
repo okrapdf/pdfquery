@@ -8,51 +8,50 @@ npm install pdfquery @okrapdf/pdfquery-plugins
 
 ---
 
-### 1. Point a VLM at any element
+### Stack plugins, query once
 
-Load a PDF, select something, ask a vision model about it. The VLM sees the actual rendered pixels, cropped to the element's bounding box.
-
-```ts
-import pdfquery from 'pdfquery';
-import { pymupdf, vlmOpenRouter } from '@okrapdf/pdfquery-plugins';
-
-const doc = await pdfquery.load([
-  pymupdf({ pdf: { type: 'path', path: './10k.pdf' }, extractImages: true }),
-  vlmOpenRouter(),
-]);
-
-const $ = doc.$;
-
-await $('page:first').vlm('what is this page about?');
-await $('table').onPage(6).vlm('extract all dollar amounts');
-await $('table').css({ margin: 20 }).vlm('what are the column headers?');
-```
-
-`.vlm()` works on any selection. Single element, multi-page, filtered subset. The plugin crops the page image to the union bounding box of whatever you selected, adds optional CSS margin for context, and sends it to the model.
-
----
-
-### 2. Deferred extraction -- only parse what you query
-
-With `defer: true`, the plugin registers a handler but doesn't extract anything. Extraction happens when you call `.markdown()` -- only for the pages you selected.
+Local OCR runs at load. Cloud extraction and VLM are on-demand. Same `$()` for everything.
 
 ```ts
 import pdfquery from 'pdfquery';
-import { llamaParse } from '@okrapdf/pdfquery-plugins';
+import { pymupdf, llamaParse, vlmOpenRouter } from '@okrapdf/pdfquery-plugins';
+
+const pdf = { type: 'path', path: './10k.pdf' } as const;
 
 const doc = await pdfquery.load([
-  llamaParse({ pdf: { type: 'path', path: './100-page-report.pdf' }, defer: true }),
+  pymupdf({ pdf, extractImages: true }),   // local — runs immediately, produces tags
+  llamaParse({ pdf, defer: true }),         // cloud — waits until you call .markdown()
+  vlmOpenRouter(),                          // VLM  — waits until you call .vlm()
 ]);
 
 const $ = doc.$;
-
-// nothing has been parsed yet
-
-const md = await $('page').onPage(6).markdown();  // extracts page 6 only
-const md2 = await $('page').onPage(6).markdown(); // cache hit, no API call
 ```
 
-The handler uploads and parses on first access, caches the result, and injects the extracted tags back into the session. Subsequent queries on the same pages are instant.
+pymupdf already extracted everything. Selectors, text search, and aggregation work instantly:
+
+```ts
+$('table').count();                        // 12 tables found locally
+$('ocr').contains('revenue').texts();      // text search across all pages
+$('[confidence>0.9]').count();             // filter by OCR confidence
+$('*').onPage(1).countByType();            // Map { ocr: 45, table: 2, heading: 3 }
+```
+
+Need rich markdown for a specific page? `.markdown()` triggers LlamaParse -- only for the pages you selected:
+
+```ts
+const md = await $('table').onPage(6).markdown();   // uploads + parses page 6
+const md2 = await $('table').onPage(6).markdown();  // cache hit, no API call
+```
+
+Need visual understanding? `.vlm()` sends the cropped page image to a vision model:
+
+```ts
+await $('table').onPage(6).vlm('what are the column headers?');
+await $('figure').eq(0).css({ margin: 20 }).vlm('describe this chart');
+await $('page:first').vlm('summarize this page in 2 sentences');
+```
+
+One query interface. Three backends. You only pay for what you use.
 
 ---
 
@@ -60,14 +59,12 @@ The handler uploads and parses on first access, caches the result, and injects t
 
 | Plugin | What it does | API key |
 |--------|-------------|---------|
-| `pymupdf` | Local PDF text + table extraction, page rasterization | No |
+| `pymupdf` | Local text + table extraction, page rasterization | No |
+| `llamaParse` | LlamaIndex Cloud extraction (eager or `defer: true`) | `LLAMAINDEX_API_KEY` |
 | `vlmOpenRouter` | `.vlm()` on any element via OpenRouter | `OPENROUTER_API_KEY` |
-| `vlmBboxDetect` | VLM-powered visual entity detection | Uses vlmOpenRouter |
-| `llamaParse` | LlamaIndex Cloud extraction (eager or deferred) | `LLAMAINDEX_API_KEY` |
-| `googleOcr` | Google Document AI | GCP credentials |
+| `vlmBboxDetect` | VLM visual entity detection (tables/figures the OCR missed) | Uses vlmOpenRouter |
 | `doclingServe` | IBM Docling (self-hosted) | No |
-
-Plugins are composable. Use one or stack them:
+| `googleOcr` | Google Document AI | GCP credentials |
 
 ```ts
 pdfquery.load([ pymupdf({ pdf }) ]);                                         // local only
