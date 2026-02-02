@@ -101,34 +101,11 @@ export interface EntityMeta {
   [key: string]: unknown;
 }
 
-// ============================================================================
-// Transformation Results (for VLM entity-to-markdown)
-// ============================================================================
-
-/**
- * Result from entity-to-markdown transformation via VLM.
- * Stored on entity._data.transformation after calling .markdown()
- */
-export interface TransformationResult {
-  success: boolean;
-  markdown: string;
-  model: string;
-  tokens: {
-    input: number;
-    output: number;
-  };
-  timestamp: number;
-  promptStyle?: 'table' | 'page' | 'json';
-}
-
 /**
  * Arbitrary data store for entities (jQuery-style .data())
- * Supports caching transformation results, user annotations, etc.
+ * Supports caching computed data, user annotations, etc.
  */
 export interface EntityDataStore {
-  /** VLM transformation result */
-  transformation?: TransformationResult;
-  /** Any additional cached/computed data */
   [key: string]: unknown;
 }
 

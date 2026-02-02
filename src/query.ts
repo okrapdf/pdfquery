@@ -30,8 +30,6 @@ import type {
   QueryConfig,
   QueryResponse,
   QueryResultItem,
-
-  EntityDataStore,
   BoundingBox,
   PageImage,
 } from './types';

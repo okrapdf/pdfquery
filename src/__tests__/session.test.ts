@@ -304,3 +304,239 @@ describe('tag attrs', () => {
     expect(doc.$('[confidence<0.5]').count()).toBe(1);
   });
 });
+
+// ============================================================================
+// .markdown() resolution chain
+// ============================================================================
+
+describe('.markdown()', () => {
+  it('falls back to entity.text when no handler and no attrs.markdown', async () => {
+    const doc = pdfquery.ready({ tags: [makeTag('t1', 'table', 1, 'plain text')] });
+    const result = await doc.$('table').eq(0).markdown();
+    expect(result).toBe('plain text');
+  });
+
+  it('returns empty string when selection is empty', async () => {
+    const doc = pdfquery.ready({ tags: makeTags() });
+    const result = await doc.$('nonexistent').markdown();
+    expect(result).toBe('');
+  });
+
+  it('prefers attrs.markdown over entity.text', async () => {
+    const tags: Tag[] = [{
+      id: 't1', type: 'table', page: 1,
+      bbox: { x: 0, y: 0, width: 1, height: 0.5 },
+      text: 'plain text',
+      attrs: { markdown: '| col1 | col2 |\n|---|---|\n| a | b |' },
+    }];
+    const doc = pdfquery.ready({ tags });
+    const result = await doc.$('table').eq(0).markdown();
+    expect(result).toBe('| col1 | col2 |\n|---|---|\n| a | b |');
+  });
+
+  it('calls markdown:call handler when registered via plugin', async () => {
+    const handler = vi.fn().mockResolvedValue('# Handler Markdown');
+
+    const plugin: PDFQueryPlugin = {
+      name: 'md-handler',
+      run: (ctx) => {
+        ctx.artifacts.set('markdown:call', handler);
+        return {};
+      },
+    };
+
+    const session = await pdfquery.load(
+      [plugin],
+      { tags: [makeTag('t1', 'table', 1, 'fallback')] },
+    );
+
+    const result = await session.$('table').eq(0).markdown();
+    expect(result).toBe('# Handler Markdown');
+    expect(handler).toHaveBeenCalledWith([1], { force: false });
+  });
+
+  it('passes force:true to handler', async () => {
+    const handler = vi.fn().mockResolvedValue('forced result');
+
+    const plugin: PDFQueryPlugin = {
+      name: 'md-handler',
+      run: (ctx) => {
+        ctx.artifacts.set('markdown:call', handler);
+        return {};
+      },
+    };
+
+    const session = await pdfquery.load(
+      [plugin],
+      { tags: [makeTag('t1', 'table', 1, 'fallback')] },
+    );
+
+    await session.$('table').eq(0).markdown({ force: true });
+    expect(handler).toHaveBeenCalledWith([1], { force: true });
+  });
+
+  it('deduplicates pages when multiple elements on same page', async () => {
+    const handler = vi.fn().mockResolvedValue('page 1 md');
+
+    const plugin: PDFQueryPlugin = {
+      name: 'md-handler',
+      run: (ctx) => {
+        ctx.artifacts.set('markdown:call', handler);
+        return {};
+      },
+    };
+
+    const session = await pdfquery.load(
+      [plugin],
+      { tags: [
+        makeTag('t1', 'table', 1, 'table A'),
+        makeTag('t2', 'figure', 1, 'figure B'),
+      ]},
+    );
+
+    // Select all non-page entities on page 1 — both map to pageIndex 0 → page 1
+    await session.$('*').not('page').onPage(1).markdown();
+    expect(handler).toHaveBeenCalledWith([1], { force: false });
+  });
+
+  it('collects pages from multi-page selections', async () => {
+    const handler = vi.fn().mockResolvedValue('multi-page md');
+
+    const plugin: PDFQueryPlugin = {
+      name: 'md-handler',
+      run: (ctx) => {
+        ctx.artifacts.set('markdown:call', handler);
+        return {};
+      },
+    };
+
+    const session = await pdfquery.load(
+      [plugin],
+      { tags: [
+        makeTag('t1', 'table', 1, 'A'),
+        makeTag('t2', 'table', 3, 'B'),
+      ]},
+    );
+
+    await session.$('table').markdown();
+    const pages = handler.mock.calls[0][0] as number[];
+    expect(pages).toContain(1);
+    expect(pages).toContain(3);
+    expect(pages).toHaveLength(2);
+  });
+
+  it('falls back to attrs.markdown when handler returns null', async () => {
+    const handler = vi.fn().mockResolvedValue(null);
+
+    const plugin: PDFQueryPlugin = {
+      name: 'md-handler',
+      run: (ctx) => {
+        ctx.artifacts.set('markdown:call', handler);
+        return {};
+      },
+    };
+
+    const tags: Tag[] = [{
+      id: 't1', type: 'table', page: 1,
+      bbox: { x: 0, y: 0, width: 1, height: 0.5 },
+      text: 'text fallback',
+      attrs: { markdown: '## attrs markdown' },
+    }];
+
+    const session = await pdfquery.load([plugin], { tags });
+    const result = await session.$('table').eq(0).markdown();
+    expect(handler).toHaveBeenCalled();
+    expect(result).toBe('## attrs markdown');
+  });
+
+  it('falls back to text when handler returns null and no attrs.markdown', async () => {
+    const handler = vi.fn().mockResolvedValue(null);
+
+    const plugin: PDFQueryPlugin = {
+      name: 'md-handler',
+      run: (ctx) => {
+        ctx.artifacts.set('markdown:call', handler);
+        return {};
+      },
+    };
+
+    const session = await pdfquery.load(
+      [plugin],
+      { tags: [makeTag('t1', 'table', 1, 'final fallback')] },
+    );
+
+    const result = await session.$('table').eq(0).markdown();
+    expect(result).toBe('final fallback');
+  });
+});
+
+// ============================================================================
+// add:tags callback (post-load tag injection)
+// ============================================================================
+
+describe('add:tags', () => {
+  it('load() registers add:tags callback on artifacts', async () => {
+    const session = await pdfquery.load(
+      [{ name: 'noop', run: () => ({}) }],
+    );
+    expect(session.artifacts.has('add:tags')).toBe(true);
+    expect(typeof session.artifacts.get('add:tags')).toBe('function');
+  });
+
+  it('add:tags callback injects tags and recompiles', async () => {
+    const session = await pdfquery.load(
+      [{ name: 'noop', run: () => ({}) }],
+      { tags: [makeTag('t1', 'table', 1, 'original')] },
+    );
+
+    expect(session.$('table').count()).toBe(1);
+
+    // Simulate a handler injecting tags post-load
+    const addTags = session.artifacts.get('add:tags') as (tags: Tag[]) => void;
+    addTags([makeTag('t2', 'figure', 2, 'injected')]);
+
+    expect(session.$('figure').count()).toBe(1);
+    expect(session.$('*').count()).toBe(4); // 2 tags + 2 synthetic page entities
+  });
+
+  it('handler can inject tags via add:tags during markdown() call', async () => {
+    const injectedTags: Tag[] = [
+      makeTag('llama-1', 'ocr', 1, 'extracted word 1'),
+      makeTag('llama-2', 'ocr', 1, 'extracted word 2'),
+    ];
+
+    const markdownHandler = vi.fn().mockImplementation(async (pages: number[], _opts: unknown) => {
+      // Simulate what LlamaParse defer handler does:
+      // 1. Upload+parse (mocked)
+      // 2. Inject tags via add:tags
+      const addTags = session.artifacts.get('add:tags') as (tags: Tag[]) => void;
+      addTags(injectedTags);
+      return `# Page ${pages[0]} markdown`;
+    });
+
+    const plugin: PDFQueryPlugin = {
+      name: 'deferred-llamaparse',
+      run: (ctx) => {
+        ctx.artifacts.set('markdown:call', markdownHandler);
+        return {};
+      },
+    };
+
+    const session = await pdfquery.load(
+      [plugin],
+      { tags: [makeTag('t1', 'table', 1, 'original table')] },
+    );
+
+    // Before .markdown() call — no OCR tags
+    expect(session.$('ocr').count()).toBe(0);
+
+    // .markdown() triggers handler which injects tags
+    const md = await session.$('table').eq(0).markdown();
+    expect(md).toBe('# Page 1 markdown');
+
+    // After .markdown() — OCR tags are now in the session
+    expect(session.$('ocr').count()).toBe(2);
+    expect(session.$('ocr').texts()).toContain('extracted word 1');
+    expect(session.$('ocr').texts()).toContain('extracted word 2');
+  });
+});
