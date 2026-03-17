@@ -1,6 +1,6 @@
 {
   "name": "pdfquery",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "jQuery for PDFs - query document entities with CSS-like selectors",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -45,6 +45,6 @@
     "jsdom": "^27.4.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
-    "vitest": "^2.0.0"
+    "vitest": "^4.1.0"
   }
 }

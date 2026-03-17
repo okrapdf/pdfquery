@@ -1,0 +1,31 @@
+{
+  "pages": [
+    {
+      "page": 1,
+      "width": 612,
+      "height": 792,
+      "items": [
+        {
+          "type": "heading",
+          "value": "Quarterly Financial Report",
+          "bBox": { "x": 50, "y": 40, "w": 350, "h": 30 }
+        },
+        {
+          "type": "text",
+          "value": "The following table summarizes key metrics.",
+          "bBox": { "x": 50, "y": 80, "w": 400, "h": 20 }
+        },
+        {
+          "type": "table",
+          "value": "",
+          "rows": [
+            ["Metric", "Q3 2025", "Q3 2024"],
+            ["Revenue", "$12,500M", "$9,800M"],
+            ["Net Income", "$3,100M", "$2,200M"]
+          ],
+          "bBox": { "x": 50, "y": 110, "w": 512, "h": 200 }
+        }
+      ]
+    }
+  ]
+}

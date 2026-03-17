@@ -37,3 +37,7 @@ export type { UnstructuredElement } from './unstructured';
 // Docling (IBM)
 export { fromDocling } from './docling';
 export type { DoclingDocument } from './docling';
+
+// LlamaParse
+export { fromLlamaParse } from './llamaparse';
+export type { LlamaParseResult, LlamaParsePage, LlamaParseItem } from './llamaparse';

@@ -5,6 +5,7 @@ import { fromAzure, type AzureAnalyzeResult } from '../azure';
 import { fromPytesseract, type TesseractDataDict } from '../tesseract';
 import { fromUnstructured, type UnstructuredElement } from '../unstructured';
 import { fromDocling, type DoclingDocument } from '../docling';
+import { fromLlamaParse, type LlamaParseResult } from '../llamaparse';
 
 import textractSample from './fixtures/textract-sample.json';
 import docaiSample from './fixtures/docai-sample.json';
@@ -13,6 +14,7 @@ import tesseractSample from './fixtures/tesseract-sample.json';
 import unstructuredSample from './fixtures/unstructured-sample.json';
 import unstructuredReal from './fixtures/unstructured-real.json';
 import doclingSample from './fixtures/docling-sample.json';
+import llamaparseSample from './fixtures/llamaparse-sample.json';
 
 function assertNormalized(val: number, name: string) {
   expect(val, `${name} should be >= 0`).toBeGreaterThanOrEqual(0);
@@ -189,5 +191,37 @@ describe('fromDocling', () => {
     const figure = result.blocks.find(b => b.type === 'figure');
     expect(figure).toBeDefined();
     expect(figure!.text).toBe('Revenue Growth Chart');
+  });
+});
+
+describe('fromLlamaParse', () => {
+  it('converts LlamaParse result to normalized blocks and tables', () => {
+    const result = fromLlamaParse(llamaparseSample as unknown as LlamaParseResult);
+
+    expect(result.pageCount).toBe(1);
+    expect(result.blocks.length).toBe(2);
+    expect(result.tables.length).toBe(1);
+
+    for (const block of result.blocks) {
+      assertBboxNormalized(block.bbox);
+    }
+
+    for (const table of result.tables) {
+      assertBboxNormalized(table.bbox);
+    }
+  });
+
+  it('converts table rows to markdown', () => {
+    const result = fromLlamaParse(llamaparseSample as unknown as LlamaParseResult);
+    const table = result.tables[0];
+    expect(table.markdown).toContain('Revenue');
+    expect(table.markdown).toContain('$12,500M');
+    expect(table.markdown).toContain('---');
+  });
+
+  it('preserves heading text', () => {
+    const result = fromLlamaParse(llamaparseSample as unknown as LlamaParseResult);
+    const texts = result.blocks.map(b => b.text);
+    expect(texts).toContain('Quarterly Financial Report');
   });
 });
