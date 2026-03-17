@@ -2,8 +2,6 @@
 
 jQuery for PDFs. Query extracted document entities with CSS-like selectors.
 
-See `demo/README.md` for running the demo locally or via GitHub Pages.
-
 ```bash
 npm install pdfquery
 ```
@@ -15,149 +13,125 @@ npm install pdfquery
 ```
 PDF → [Document Processor] → bboxes + text + metadata → pdfquery → queryable DOM
               ↑
-      (partitioner, parser, processor, analyzer)
       Unstructured, Docling, LlamaParse,
       Google DocAI, Azure, Textract, etc.
 ```
 
 Think of pdfquery as a **conceptual port of jQuery**. Same syntax patterns, completely different data structure.
 
-### How Close to jQuery?
-
 | Feature | jQuery | pdfquery |
 |---------|--------|----------|
-| **The "$"** | `$('.class')` selects HTML elements | `$$('.table')` selects OCR-detected entities |
+| **The "$"** | `$('.class')` selects HTML elements | `$('.table')` selects OCR-detected entities |
 | **Traversal** | Browser DOM (tags, IDs, classes) | Virtual Doc (tables, figures, fields) |
 | **Purpose** | DOM manipulation (hide, show, append) | **Data extraction** (sum, avg, count) |
 | **Selectors** | CSS levels 1-3 | CSS-like + data filters like `[confidence>0.9]` |
 
 **Key difference:** jQuery changes how a webpage *looks*. pdfquery extracts information from documents already processed by AI.
 
-### Syntax Mapping from jQuery
+## Quick Start
 
-| jQuery | pdfquery | Notes |
-|--------|----------|-------|
-| `.val()` | `.text()` / `.values()` | `.values()` strips currency symbols → numbers |
-| `.each(fn)` | `.texts()` | Returns array directly |
-| `.find()` | `.filter()` | Same concept |
-| — | `.sum()`, `.avg()`, `.stats()` | Aggregation methods jQuery doesn't have |
-
-### Where pdfquery Sits in the Pipeline
-
-```
-┌─────────────┐     ┌──────────────────────┐     ┌───────────┐
-│   PDF/IMG   │ ──▶ │  Document Processor  │ ──▶ │ pdfquery  │
-│  (raw file) │     │  (layout + extract)  │     │ (query)   │
-└─────────────┘     └──────────────────────┘     └───────────┘
-                              │
-                Outputs structured elements:
-                bboxes + text + confidence
-```
-
-pdfquery consumes the **output** of document processing services. You need one of these first:
-
-| Service | Class/Method | Bbox Field | Normalization |
-|---------|--------------|------------|---------------|
-| **Unstructured** | `partition()` → `Element.metadata.coordinates` | `CoordinatesMetadata.points` (tuple of x,y) | Divide by `system.layout_width/height` |
-| **Docling** | `DoclingDocument` → `item.prov[].bbox` | `BoundingBox(l, t, r, b, coord_origin)` | Already normalized or use `coord_origin` |
-| **Google DocAI** | `Document.pages[].blocks[]` | `boundingPoly.normalizedVertices[].x/y` | Already 0-1 normalized |
-| **Azure DocIntel** | `AnalyzeResult.documents[].fields[]` | `BoundingRegion.polygon` (list of Points) | Divide by page `width/height` |
-| **AWS Textract** | `AnalyzeDocumentResponse.Blocks[]` | `Geometry.BoundingBox.Left/Top/Width/Height` | Already 0-1 normalized |
-| **Tesseract** | `pytesseract.image_to_data()` | `left, top, width, height` (pixels) | Divide by image dimensions |
-
-### Example: Normalizing Vendor Output
+No API key needed — built-in fixtures included:
 
 ```typescript
-// AWS Textract (already normalized 0-1)
-const textractBlock = { Geometry: { BoundingBox: { Left: 0.1, Top: 0.2, Width: 0.3, Height: 0.05 }}};
-const bbox = {
-  x: textractBlock.Geometry.BoundingBox.Left,       // 0.1
-  y: textractBlock.Geometry.BoundingBox.Top,        // 0.2  
-  width: textractBlock.Geometry.BoundingBox.Width,  // 0.3
-  height: textractBlock.Geometry.BoundingBox.Height // 0.05
-};
+import { loadFixture } from 'pdfquery';
 
-// Tesseract (pixels → normalize by dividing by image size)
-const tesseractWord = { left: 100, top: 200, width: 150, height: 30 };
-const imageSize = { width: 1000, height: 1400 };
-const bbox = {
-  x: tesseractWord.left / imageSize.width,      // 0.1
-  y: tesseractWord.top / imageSize.height,      // 0.143
-  width: tesseractWord.width / imageSize.width, // 0.15
-  height: tesseractWord.height / imageSize.height // 0.021
-};
-
-// Google DocAI (normalizedVertices already 0-1)
-const docaiBlock = { boundingPoly: { normalizedVertices: [{x:0.1,y:0.2}, {x:0.4,y:0.2}, {x:0.4,y:0.25}, {x:0.1,y:0.25}]}};
-const v = docaiBlock.boundingPoly.normalizedVertices;
-const bbox = { x: v[0].x, y: v[0].y, width: v[1].x - v[0].x, height: v[2].y - v[0].y };
-```
-
-### Input Format
-
-pdfquery accepts JSON with:
-- **Bounding boxes**: Normalized 0-1 coordinates (`{x, y, width, height}` or `{xmin, ymin, xmax, ymax}`)
-- **Text content**: The extracted text
-- **Entity metadata**: Type, confidence score, verification status
-
-```typescript
-// Example: what OCR services output → what pdfquery consumes
-{
-  tables: [{
-    id: "table-1",
-    page_number: 1,
-    markdown: "| Revenue | $12.5B |\n|---|---|",
-    bbox: { xmin: 0.05, ymin: 0.15, xmax: 0.95, ymax: 0.5 },  // normalized 0-1
-    confidence: 0.98
-  }],
-  entities: [{
-    id: "field-total",
-    page_number: 1,
-    field_label: "Total",
-    suggested_value: "$205.07",
-    bounding_box: { x: 0.75, y: 0.68, width: 0.15, height: 0.03 },
-    confidence: 0.98
-  }]
-}
-```
-
-## Quick Start (No API Key Needed)
-
-```typescript
-import { loadFixture, createQueryEngine } from 'pdfquery';
-
-// Load sample data (financial report or invoice)
 const doc = loadFixture('financial-report');
-const $$ = createQueryEngine(doc);
 
-// Query like jQuery
-$$('.table').count();           // 4 tables
-$$('.currency').sum();          // aggregate values
-$$('[confidence>0.9]').texts(); // high-confidence extractions
+doc.$('.table').count();           // 4 tables
+doc.$('.currency').sum();          // aggregate values
+doc.$('[confidence>0.9]').texts(); // high-confidence extractions
 ```
 
 Available fixtures: `'financial-report'`, `'invoice'`
 
 ## Usage with Your Own Data
 
+pdfquery works with **Tags** — a simple, vendor-agnostic format:
+
 ```typescript
-import { DocCompiler, createQueryEngine } from 'pdfquery';
+import { pdfquery } from 'pdfquery';
 
-// Your OCR output (from any service)
-const ocrOutput = {
-  tables: [{ id: 't1', page_number: 1, markdown: '...', bbox: {...}, confidence: 0.95 }],
-  entities: [{ id: 'e1', page_number: 1, suggested_value: '$100', bounding_box: {...} }]
-};
+const session = pdfquery.ready({
+  tags: [
+    {
+      id: 'table-1',
+      type: 'table',
+      page: 1,
+      bbox: { x: 0.05, y: 0.15, width: 0.9, height: 0.35 },
+      text: '| Revenue | $12.5B |\n|---|---|\n| Expenses | $8.2B |',
+      attrs: { confidence: 0.98 },
+    },
+    {
+      id: 'field-total',
+      type: 'currency',
+      page: 1,
+      bbox: { x: 0.75, y: 0.68, width: 0.15, height: 0.03 },
+      text: '$205.07',
+      attrs: { confidence: 0.95, value: 205.07 },
+    },
+  ],
+});
 
-// Compile into queryable DOM
-const compiler = new DocCompiler({ documentId: 'my-doc' });
-compiler.addTables(ocrOutput.tables);
-compiler.addEntities(ocrOutput.entities);
-const doc = compiler.compile();
+session.$('.table').count();      // 1
+session.$('.currency').sum();     // 205.07
+```
 
-// Query
-const $$ = createQueryEngine(doc);
-$$('.table').stats();
+## Vendor Adapters
+
+pdfquery ships adapters that convert vendor-specific output into Tags automatically:
+
+```typescript
+import { pdfquery, fromUnstructured, fromDocling, fromTextract } from 'pdfquery';
+
+// Unstructured
+const { blocks, tables } = fromUnstructured(unstructuredElements);
+
+// Docling (IBM)
+const { blocks, tables } = fromDocling(doclingDocument);
+
+// AWS Textract
+const { blocks, tables } = fromTextract(textractResponse);
+
+// Google Document AI
+import { fromDocAI } from 'pdfquery';
+const { blocks, tables } = fromDocAI(docaiDocument);
+
+// Azure Document Intelligence
+import { fromAzure } from 'pdfquery';
+const { blocks, tables } = fromAzure(azureResult);
+
+// Tesseract
+import { fromPytesseract, fromTesseractJs } from 'pdfquery';
+const { blocks } = fromPytesseract(tesseractData, { width: 612, height: 792 });
+```
+
+All adapters normalize bounding boxes to 0-1 coordinates and return an `AdapterResult`:
+
+```typescript
+interface AdapterResult {
+  blocks: NormalizedBlock[];  // text blocks with normalized bboxes
+  tables: NormalizedTable[];  // tables with markdown + normalized bboxes
+  pageCount: number;
+}
+```
+
+## Event-Driven Usage
+
+pdfquery supports reactive data flow — add tags incrementally and listen for updates:
+
+```typescript
+import { pdfquery } from 'pdfquery';
+
+const doc = pdfquery();
+
+// Listen for data
+doc.on('tags', ($) => {
+  console.log('Tables found:', $('.table').count());
+});
+
+// Feed data as it arrives (e.g., from a streaming OCR pipeline)
+doc.addTags(firstBatch);
+doc.addTags(secondBatch);
 ```
 
 ## Selectors
@@ -191,18 +165,25 @@ $$('.table').stats();
 - `.onPage(n)` - Filter to page
 - `.take(n)` / `.skip(n)` - Limit results
 
+### Spatial
+- `.near(selector, distance)` - Entities near another
+- `.above(selector)` - Entities above another
+- `.below(selector)` - Entities below another
+- `.leftOf(selector)` - Entities left of another
+- `.rightOf(selector)` - Entities right of another
+- `.within(bbox)` - Entities within a bounding box
+
 ### Data Access
 - `.text()` - Get text of first element
 - `.texts()` - Get all texts as array
 - `.values()` - Get parsed numeric values
 - `.attr(key)` - Get attribute
 - `.attr(key, value)` - Set attribute
-- `.data(key)` - Get/set arbitrary data
 
 ### Aggregation
-- `.stats()` - Verification statistics
 - `.sum()` / `.avg()` / `.min()` / `.max()` - Numeric aggregation
 - `.count()` - Count entities
+- `.stats()` - Verification statistics
 - `.countByType()` - Count by entity type
 - `.countByPage()` - Count by page
 
@@ -211,58 +192,37 @@ $$('.table').stats();
 - `.groupByPage()` - Group by page number
 - `.groupByType()` - Group by entity type
 
-### AI / VLM
-- `.vlm(prompt)` - Ask a vision model about the selected elements (needs `vlmOpenRouter` plugin)
-- `.markdown()` - Transform entity to markdown via VLM
-
 ### Rendering
 - `.html()` - Render as HTML
 - `.htmlDocument()` - Full HTML document
 - `.json()` - JSON string
 
-## Multi-Layer Builder Pattern
+## Plugins
 
-pdfquery merges **multiple extraction layers** into one queryable DOM. Each layer can come from a different OCR/VLM service:
+Extend pdfquery with plugins for custom processing:
 
 ```typescript
-const compiler = new DocCompiler({ documentId: 'doc' });
+import { pdfquery, registerPlugin } from 'pdfquery';
 
-// Layer 1: Raw OCR blocks (word/line level from Tesseract, Google DocAI)
-compiler.addOcrBlocks([
-  { id: 'ocr-1', page: 1, text: 'Revenue', bbox: { x: 0.1, y: 0.2, width: 0.15, height: 0.03 }, confidence: 0.99 },
-  { id: 'ocr-2', page: 1, text: '$12.5B', bbox: { x: 0.3, y: 0.2, width: 0.1, height: 0.03 }, confidence: 0.97 },
-]);
-
-// Layer 2: Tables (from table extraction model)
-compiler.addTables([
-  { id: 't1', page_number: 1, markdown: '| Revenue | $12.5B |', bbox: { xmin: 0.05, ymin: 0.15, xmax: 0.95, ymax: 0.5 }, confidence: 0.95 }
-]);
-
-// Layer 3: Semantic entities (figures, footnotes from VLM)
-compiler.addExtractedEntities([
-  { id: 'fig-1', type: 'figure', title: 'Revenue Chart', page: 1, bbox: { x: 0.1, y: 0.6, width: 0.8, height: 0.3 }, confidence: 0.92 }
-]);
-
-// Compile all layers → one DOM
-const doc = compiler.compile();
-const $$ = createQueryEngine(doc);
-
-// Query across all layers
-$$('.table').count();        // tables
-$$('span.ocr-block').count(); // raw OCR
-$$('.figure').count();       // figures
-$$('*').onPage(1).count();   // everything on page 1
+registerPlugin({
+  name: 'my-enricher',
+  run: async ({ $, emit, artifacts }) => {
+    // Process entities, emit events, store results
+    return { tags: [] }; // optionally return new tags
+  },
+});
 ```
 
-| Method | Layer Type | Granularity |
-|--------|-----------|-------------|
-| `addOcrBlocks()` | Raw OCR | Word/line bboxes |
-| `addTables()` | Tables | Table bbox + markdown |
-| `addEntities()` | Fields | Key-value pairs |
-| `addExtractedEntities()` | Semantic | Figures, footnotes, summaries |
-| `addMarkdownBlocks()` | VLM output | Full-page markdown |
+## Where pdfquery Sits in the Pipeline
 
-This is the "hydration" model — each layer enriches the same coordinate system.
+| Service | Adapter |
+|---------|---------|
+| **Unstructured** | `fromUnstructured()` |
+| **Docling** | `fromDocling()` |
+| **Google DocAI** | `fromDocAI()` |
+| **Azure DocIntel** | `fromAzure()` |
+| **AWS Textract** | `fromTextract()` |
+| **Tesseract** | `fromPytesseract()` / `fromTesseractJs()` |
 
 ## License
 

@@ -37,9 +37,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pdfquery/pdfquery"
+    "url": "https://github.com/okrapdf/pdfquery"
   },
-  "homepage": "https://github.com/pdfquery/pdfquery#readme",
+  "homepage": "https://github.com/okrapdf/pdfquery#readme",
   "devDependencies": {
     "@types/jsdom": "^27.0.0",
     "jsdom": "^27.4.0",

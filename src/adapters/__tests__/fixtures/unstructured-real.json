@@ -1,0 +1,45 @@
+[
+  {
+    "type": "Title",
+    "element_id": "real-title-1",
+    "text": "Quarterly Earnings Report",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "system": "PixelSpace",
+        "layout_width": 612,
+        "layout_height": 792,
+        "points": [[50, 40], [400, 40], [400, 70], [50, 70]]
+      }
+    }
+  },
+  {
+    "type": "NarrativeText",
+    "element_id": "real-text-1",
+    "text": "The following table summarizes our financial results for the quarter ended September 30, 2025.",
+    "metadata": {
+      "page_number": 1,
+      "coordinates": {
+        "system": "PixelSpace",
+        "layout_width": 612,
+        "layout_height": 792,
+        "points": [[50, 75], [562, 75], [562, 95], [50, 95]]
+      }
+    }
+  },
+  {
+    "type": "Table",
+    "element_id": "real-table-1",
+    "text": "",
+    "metadata": {
+      "page_number": 1,
+      "text_as_html": "<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody><tr><td>Revenue</td><td>$12.5B</td></tr></tbody></table>",
+      "coordinates": {
+        "system": "PixelSpace",
+        "layout_width": 612,
+        "layout_height": 792,
+        "points": [[50, 100], [562, 100], [562, 400], [50, 400]]
+      }
+    }
+  }
+]
