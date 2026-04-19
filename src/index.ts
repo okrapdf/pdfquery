@@ -1,99 +1,14 @@
-/**
- * pdfquery — jQuery for PDFs
- *
- * Scriptable query layer for document entities.
- * Feed Tags in, query with $.
- *
- * Structure: Document → Page[] → Entity[] (flat, no nesting)
- *
- * @example
- * import { pdfquery } from 'pdfquery';
- *
- * const tags = [{ id: 't1', type: 'table', page: 1, bbox: { x: 0, y: 0, width: 1, height: 1 }, text: '...' }];
- * const session = pdfquery.ready({ tags });
- * session.$('.table').count();
- */
-
-// Types (public)
-export type {
-  EntityType,
-  VerificationStatus,
-  Selector,
-  QueryStats,
-  QueryConfig,
-  QueryResponse,
-  QueryResultItem,
-  DocumentInfo,
-  PDFInput,
-  PageImage,
-} from './types';
-
-// Types (internal plumbing — needed by tree-adapter consumers & interop)
-export type {
-  VirtualDoc,
-  VirtualPage,
-  VirtualEntity,
-  BoundingBox,
-  EntityMeta,
-  PageMeta,
-  DocumentMeta,
-} from './types';
-
-// Query layer
-export {
-  QueryResult,
-  createQueryEngine,
-  queryPage,
-  queryPages,
-  executeQuery,
-  formatQueryResponse,
-} from './query';
-export type {
-  QueryEngine,
-  RenderOptions,
-  EntityChange,
-  MutationLog,
-  VLMCallHandler,
-  VLMImage,
-} from './query';
-
-// Tree adapter (Inspector tree → Tags / VirtualDoc)
-export { treeToTags, treeToVirtualDoc, getPageCount } from './tree-adapter';
-export type { InspectorTreeNode, TreeAdapterOptions } from './tree-adapter';
-
-// Sample fixtures (zero-dependency demos)
-export {
-  fixtures,
-  loadFixture,
-  loadFixtureTags,
-  compileFixture,
-  listFixtures,
-  getFixture,
-} from './fixtures';
-export type { FixtureData, FixtureName } from './fixtures';
-
-// Vendor adapters (normalize OCR vendor output → AdapterResult)
-export * from './adapters';
-
-// Session API (jQuery-like lifecycle — primary entry point)
-export { default as pdfquery, PDFQuerySession } from './session';
-
-// Tag model
-export { buildTagTree, computeCoverage, findOrphans } from './tag';
-export type { Tag, BBox, TagTreeNode, PageData } from './tag';
-
-// Tag utilities (type detection, value parsing, table expansion)
-export {
-  detectEntityType,
-  parseValue,
-  parseMarkdownTable,
-  enrichTag,
-  expandTableTag,
-} from './tag-utils';
-
-// Plugin system
-export { registerPlugin, resolveOrder, runPlugins } from './plugin';
-export type { PDFQueryPlugin, PluginContext, PluginResult, PluginRunnerOptions } from './plugin';
-
-// Event emitter
-export { PDFEventEmitter } from './events';
+import { Collection, createCollection, EventMap, isCollection } from './collection.js'
+import { PdfEvent } from './events.js'
+type ObjectNode<T> = T extends object ? (T extends Function ? never : Function extends T ? never : T) : never
+export default function pdfquery<T extends object, E extends EventMap = EventMap>(wrapper: Collection<T, E>): Collection<T, E>
+export default function pdfquery<T extends object, E extends EventMap = EventMap>(nodes: ObjectNode<T>[] | Iterable<ObjectNode<T>>): Collection<T, E>
+export default function pdfquery<T extends object, E extends EventMap = EventMap>(node: ObjectNode<T>): Collection<T, E>
+export default function pdfquery<T extends object, E extends EventMap = EventMap>(input?: unknown): Collection<T, E> {
+  if (input == null) return createCollection<T, E>([]); if (typeof input === 'function') throw new TypeError("pdfquery(fn) is not supported; use pdfquery(doc).on('load', fn)")
+  if (isCollection(input)) return input as Collection<T, E>; if (typeof input === 'string') throw new TypeError('pdfquery string selectors are not supported; pass object-shaped nodes')
+  const nodes = isIterable(input) ? [...input] : [input]; for (const node of nodes) assertObjectNode(node); return createCollection<T, E>(nodes as T[])
+}
+function isIterable(value: unknown): value is Iterable<unknown> { return typeof value === 'object' && value !== null && Symbol.iterator in value }
+function assertObjectNode(value: unknown): asserts value is object { if (typeof value !== 'object' || value === null) throw new TypeError('pdfquery requires object-shaped nodes; WeakMap cannot key primitive values') }
+export type { Collection, PdfEvent }

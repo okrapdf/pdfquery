@@ -1,50 +1,27 @@
 {
   "name": "pdfquery",
   "version": "0.2.0",
-  "description": "jQuery for PDFs - query document entities with CSS-like selectors",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
   },
-  "files": [
-    "dist",
-    "fixtures",
-    "README.md"
-  ],
+  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "divergence.md"],
+  "engines": { "node": ">=18" },
+  "dependencies": {},
+  "peerDependencies": {},
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "prepublishOnly": "npm run build"
+    "build": "tsup src/index.ts --format esm --dts --minify --target es2022 --out-dir dist",
+    "size": "gzip -c dist/index.js | wc -c"
   },
-  "keywords": [
-    "pdf",
-    "query",
-    "jquery",
-    "document",
-    "ocr",
-    "extraction",
-    "dom",
-    "selector"
-  ],
-  "author": "pdfquery contributors",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/okrapdf/pdfquery"
-  },
-  "homepage": "https://github.com/okrapdf/pdfquery#readme",
   "devDependencies": {
-    "@types/jsdom": "^27.0.0",
-    "jsdom": "^27.4.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0",
-    "vitest": "^4.1.0"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "tsup": "^8.3.0",
+    "@types/node": "^20.0.0"
   }
 }

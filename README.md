@@ -1,228 +1,118 @@
 # pdfquery
 
-jQuery for PDFs. Query extracted document entities with CSS-like selectors.
+```ts
+import pdfquery from 'pdfquery'
 
-```bash
+const doc = { id: 'doc-2026-04' }
+const page = { id: 'page-1', number: 1 }
+const annotation = { id: 'annot-7', page: 1 }
+
+const $doc = pdfquery([doc, page, annotation])
+
+$doc.on('change', (event) => {
+  console.log('changed node', event.target, event.detail)
+})
+
+$doc.on('annotation', (event) => {
+  console.log('annotation event', event.target, event.detail)
+})
+
+$doc.on('verify', (event) => {
+  console.log('verification score', event.detail)
+})
+
+$doc.on('load', (event) => {
+  console.log('loaded', event.target)
+})
+
+pdfquery(page).trigger('change', { field: 'rotation', value: 90 })
+pdfquery(annotation).trigger('annotation', { x: 148, y: 320, text: 'check total' })
+pdfquery(doc).trigger('verify', { score: 0.98, reasons: ['totals match'] })
+pdfquery(doc).trigger('load')
+```
+
+pdfquery is a minimal, tree-agnostic, jQuery-style wrapper for object-shaped PDF nodes. It does not parse PDFs, construct trees, or implement CSS selectors. You bring your own nodes; pdfquery gives you a small collection wrapper and a WeakMap-backed event plane over those nodes.
+
+The mental model: facets push events via `.trigger()`, consumers subscribe via `.on()`, and pdfquery is the tree-indexed broker in between.
+
+## Install
+
+```sh
 npm install pdfquery
 ```
 
-## What This Is (and Isn't)
+ESM only. Zero runtime dependencies. Runs in browsers, Node >=18, Cloudflare Workers, Bun, and Deno-compatible ESM environments.
 
-**pdfquery does NOT parse PDFs.** It takes the **output** of any document processing service and makes it queryable:
+## Typed Events
 
-```
-PDF → [Document Processor] → bboxes + text + metadata → pdfquery → queryable DOM
-              ↑
-      Unstructured, Docling, LlamaParse,
-      Google DocAI, Azure, Textract, etc.
-```
+```ts
+import pdfquery from 'pdfquery'
 
-Think of pdfquery as a **conceptual port of jQuery**. Same syntax patterns, completely different data structure.
-
-| Feature | jQuery | pdfquery |
-|---------|--------|----------|
-| **The "$"** | `$('.class')` selects HTML elements | `$('.table')` selects OCR-detected entities |
-| **Traversal** | Browser DOM (tags, IDs, classes) | Virtual Doc (tables, figures, fields) |
-| **Purpose** | DOM manipulation (hide, show, append) | **Data extraction** (sum, avg, count) |
-| **Selectors** | CSS levels 1-3 | CSS-like + data filters like `[confidence>0.9]` |
-
-**Key difference:** jQuery changes how a webpage *looks*. pdfquery extracts information from documents already processed by AI.
-
-## Quick Start
-
-No API key needed — built-in fixtures included:
-
-```typescript
-import { loadFixture } from 'pdfquery';
-
-const doc = loadFixture('financial-report');
-
-doc.$('.table').count();           // 4 tables
-doc.$('.currency').sum();          // aggregate values
-doc.$('[confidence>0.9]').texts(); // high-confidence extractions
-```
-
-Available fixtures: `'financial-report'`, `'invoice'`
-
-## Usage with Your Own Data
-
-pdfquery works with **Tags** — a simple, vendor-agnostic format:
-
-```typescript
-import { pdfquery } from 'pdfquery';
-
-const session = pdfquery.ready({
-  tags: [
-    {
-      id: 'table-1',
-      type: 'table',
-      page: 1,
-      bbox: { x: 0.05, y: 0.15, width: 0.9, height: 0.35 },
-      text: '| Revenue | $12.5B |\n|---|---|\n| Expenses | $8.2B |',
-      attrs: { confidence: 0.98 },
-    },
-    {
-      id: 'field-total',
-      type: 'currency',
-      page: 1,
-      bbox: { x: 0.75, y: 0.68, width: 0.15, height: 0.03 },
-      text: '$205.07',
-      attrs: { confidence: 0.95, value: 205.07 },
-    },
-  ],
-});
-
-session.$('.table').count();      // 1
-session.$('.currency').sum();     // 205.07
-```
-
-## Vendor Adapters
-
-pdfquery ships adapters that convert vendor-specific output into Tags automatically:
-
-```typescript
-import { pdfquery, fromUnstructured, fromDocling, fromTextract } from 'pdfquery';
-
-// Unstructured
-const { blocks, tables } = fromUnstructured(unstructuredElements);
-
-// Docling (IBM)
-const { blocks, tables } = fromDocling(doclingDocument);
-
-// AWS Textract
-const { blocks, tables } = fromTextract(textractResponse);
-
-// Google Document AI
-import { fromDocAI } from 'pdfquery';
-const { blocks, tables } = fromDocAI(docaiDocument);
-
-// Azure Document Intelligence
-import { fromAzure } from 'pdfquery';
-const { blocks, tables } = fromAzure(azureResult);
-
-// Tesseract
-import { fromPytesseract, fromTesseractJs } from 'pdfquery';
-const { blocks } = fromPytesseract(tesseractData, { width: 612, height: 792 });
-```
-
-All adapters normalize bounding boxes to 0-1 coordinates and return an `AdapterResult`:
-
-```typescript
-interface AdapterResult {
-  blocks: NormalizedBlock[];  // text blocks with normalized bboxes
-  tables: NormalizedTable[];  // tables with markdown + normalized bboxes
-  pageCount: number;
+type PdfEvents = {
+  verify: { score: number; reasons: string[] }
+  annotation: { x: number; y: number; text: string }
+  load: void
 }
+
+const nodes = [{ id: 'page-1' }]
+const $ = pdfquery<{ id: string }, PdfEvents>(nodes)
+
+$.on('verify', (event) => {
+  event.detail.score
+  event.target.id
+})
+
+$.trigger('verify', { score: 0.91, reasons: ['signature present'] })
+$.trigger('load', undefined)
 ```
 
-## Event-Driven Usage
+Unknown event names are still allowed and use `unknown` detail, which keeps pdfquery open to event names created by plugins, parser facets, and application code.
 
-pdfquery supports reactive data flow — add tags incrementally and listen for updates:
+## Surface
 
-```typescript
-import { pdfquery } from 'pdfquery';
+| API | Description |
+| --- | --- |
+| `pdfquery(node)` | Wrap one object-shaped node. |
+| `pdfquery(nodes)` | Wrap an array or iterable of object-shaped nodes. |
+| `pdfquery(wrapper)` | Return an existing pdfquery collection. |
+| `.on(type, handler)` | Subscribe handlers on each node in the collection. |
+| `.off(type?, handler?)` | Remove one handler, all handlers for a type, or all handlers. |
+| `.one(type, handler)` | Subscribe a handler that removes itself after one call. |
+| `.trigger(type, detail?)` | Synchronously emit an event for each unique node in the collection. |
+| `.each(fn)` | Iterate nodes and return the collection. |
+| `.map(fn)` | Return a native array of mapped values. |
+| `.filter(fn)` | Return a new collection of matching nodes. |
+| `.first()` | Return a collection containing the first node, if present. |
+| `.last()` | Return a collection containing the last node, if present. |
+| `.eq(i)` | Return a collection containing the node at index `i`, if present. |
+| `.length` | Number of nodes in the collection. |
+| `[index]` | Indexed access to nodes. |
+| `[Symbol.iterator]` | Use `for...of`, spread, or `Array.from`. |
 
-const doc = pdfquery();
+## Errors
 
-// Listen for data
-doc.on('tags', ($) => {
-  console.log('Tables found:', $('.table').count());
-});
+If an event handler throws, pdfquery continues invoking the remaining handlers. It then emits an `error` event on the same node with:
 
-// Feed data as it arrives (e.g., from a streaming OCR pipeline)
-doc.addTags(firstBatch);
-doc.addTags(secondBatch);
+```ts
+{ source: 'handler', type, error }
 ```
 
-## Selectors
+If no `error` listener is registered anywhere in the triggering collection, the original error is rethrown synchronously.
 
-| Selector | Description |
-|----------|-------------|
-| `*` | All entities |
-| `.table` | Tables |
-| `.figure` | Figures/charts |
-| `.currency` | Currency values |
-| `.percentage` | Percentages |
-| `.date` | Dates |
-| `.footnote` | Footnotes |
-| `#entity_id` | By ID |
-| `[attr=value]` | Attribute equals |
-| `[attr>value]` | Attribute greater than |
-| `[confidence>0.9]` | High confidence |
-| `:contains(text)` | Text search |
-| `:page(5)` | On specific page |
-| `:pages(1-10)` | Page range |
-| `:first` | First match |
-| `:last` | Last match |
+## What pdfquery Does Not Do
 
-## Methods
+pdfquery v0.2 has no selector engine, traversal, mutation, content access, style helpers, ajax, DOM event bridge, or ready callback. See [divergence.md](./divergence.md) for the full jQuery divergence list.
 
-### Filtering
-- `.filter(selector)` - Filter by selector or predicate
-- `.not(selector)` - Exclude matches
-- `.contains(text)` - Text search
-- `.matches(regex)` - Regex match
-- `.onPage(n)` - Filter to page
-- `.take(n)` / `.skip(n)` - Limit results
+## Companion Parser
 
-### Spatial
-- `.near(selector, distance)` - Entities near another
-- `.above(selector)` - Entities above another
-- `.below(selector)` - Entities below another
-- `.leftOf(selector)` - Entities left of another
-- `.rightOf(selector)` - Entities right of another
-- `.within(bbox)` - Entities within a bounding box
+Tree construction and provider adapters are moving to `@okrapdf/doc-parser` (WIP). Use that package, or your own parser/index, to produce the object-shaped nodes that pdfquery wraps.
 
-### Data Access
-- `.text()` - Get text of first element
-- `.texts()` - Get all texts as array
-- `.values()` - Get parsed numeric values
-- `.attr(key)` - Get attribute
-- `.attr(key, value)` - Set attribute
+## v1 Roadmap
 
-### Aggregation
-- `.sum()` / `.avg()` / `.min()` / `.max()` - Numeric aggregation
-- `.count()` - Count entities
-- `.stats()` - Verification statistics
-- `.countByType()` - Count by entity type
-- `.countByPage()` - Count by page
-
-### Grouping
-- `.groupBy(fn)` - Group by key function
-- `.groupByPage()` - Group by page number
-- `.groupByType()` - Group by entity type
-
-### Rendering
-- `.html()` - Render as HTML
-- `.htmlDocument()` - Full HTML document
-- `.json()` - JSON string
-
-## Plugins
-
-Extend pdfquery with plugins for custom processing:
-
-```typescript
-import { pdfquery, registerPlugin } from 'pdfquery';
-
-registerPlugin({
-  name: 'my-enricher',
-  run: async ({ $, emit, artifacts }) => {
-    // Process entities, emit events, store results
-    return { tags: [] }; // optionally return new tags
-  },
-});
-```
-
-## Where pdfquery Sits in the Pipeline
-
-| Service | Adapter |
-|---------|---------|
-| **Unstructured** | `fromUnstructured()` |
-| **Docling** | `fromDocling()` |
-| **Google DocAI** | `fromDocAI()` |
-| **Azure DocIntel** | `fromAzure()` |
-| **AWS Textract** | `fromTextract()` |
-| **Tesseract** | `fromPytesseract()` / `fromTesseractJs()` |
+- Keep the wrapper/event core small and dependency-free.
+- Stabilize interop with `@okrapdf/doc-parser`.
+- Document common PDF event vocabularies for parser facets, verification facets, annotation facets, and UI layers.
+- Consider optional companion packages for selectors or traversal without adding them to core.
 
 ## License
 

@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: node -e "const p=require('./package.json'); if (Object.keys(p.dependencies||{}).length || Object.keys(p.peerDependencies||{}).length) { console.error('deps must be empty'); process.exit(1) }"
+      - run: npm run build
+      - run: SIZE=$(gzip -c dist/index.js | wc -c); if [ $SIZE -gt 5120 ]; then echo "Bundle too large: $SIZE"; exit 1; fi
