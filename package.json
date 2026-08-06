@@ -1,21 +1,43 @@
 {
   "name": "pdfquery",
-  "version": "0.2.0",
+  "version": "0.3.0",
+  "description": "Query native tagged-PDF structure from the command line",
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "pdfquery": "./dist/cli.js"
+  },
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
   },
-  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md", "divergence.md"],
-  "engines": { "node": ">=18" },
-  "dependencies": {},
+  "files": ["dist", "fixtures", "install.sh", "README.md", "LICENSE", "CHANGELOG.md", "divergence.md"],
+  "engines": { "node": ">=20.16.0 || >=22.3.0" },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/okra-project/pdfquery.git"
+  },
+  "homepage": "https://github.com/okra-project/pdfquery#readme",
+  "bugs": {
+    "url": "https://github.com/okra-project/pdfquery/issues"
+  },
+  "keywords": ["pdf", "query", "cli", "tagged-pdf", "accessibility", "structtree"],
+  "dependencies": {
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "5.4.394"
+  },
   "peerDependencies": {},
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build": "tsup src/index.ts --format esm --dts --minify --target es2022 --out-dir dist",
+    "build": "tsup",
+    "check:dist": "node scripts/check-dist.mjs",
+    "test:package": "npm run build && npm run check:dist && node scripts/test-package.mjs",
+    "test:install": "sh -n install.sh",
+    "test:acceptance:syntax": "sh -n scripts/acceptance.sh",
+    "prepack": "npm run build && npm run check:dist",
     "size": "gzip -c dist/index.js | wc -c"
   },
   "devDependencies": {

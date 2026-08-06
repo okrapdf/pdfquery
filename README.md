@@ -1,5 +1,75 @@
 # pdfquery
 
+Query a tagged PDF's native structure directly from the command line. Processing is local: there is no OCR, inferred structure, cloud service, parser registry, or host runtime.
+
+```sh
+npx --yes pdfquery@latest report.pdf 'H1'
+```
+
+The default output is one matched node's text per line. For the deterministic fixture in this repository:
+
+```sh
+npx --yes pdfquery@latest ./fixtures/tagged-report.pdf 'H1'
+# Quarterly revenue
+```
+
+Input PDFs must contain a native `StructTreeRoot`. Untagged PDFs fail clearly instead of falling back to OCR or structure inference.
+
+## CLI
+
+```text
+pdfquery <file.pdf|-> <selector> [options]
+
+-o, --output text|json|size
+-a, --attribute name
+-h, --help
+-v, --version
+```
+
+Selectors include semantic roles (`H1`, `P`, `Table`), descendant and child combinators (`Sect > P`), attributes (`Figure[alt*="revenue"]`), `:contains(...)`, comma groups, and virtual page scopes (`page[page=4] H2`).
+
+To test an unpublished artifact exactly as npx will install it:
+
+```sh
+npm pack
+npx --yes --package ./pdfquery-0.3.0.tgz -- \
+  pdfquery ./fixtures/tagged-report.pdf 'H1'
+```
+
+## Installer
+
+The production installer defaults to `pdfquery@latest` under the user-local `$HOME/.local` prefix, never invokes `sudo`, and requires Node.js >= 20.16 plus npm:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/okra-project/pdfquery/main/install.sh | sh
+pdfquery report.pdf 'H1'
+```
+
+For a pre-publish tarball or a user-owned install prefix:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/okra-project/pdfquery/main/install.sh \
+  | PDFQUERY_PACKAGE=https://example.test/pdfquery-0.3.0.tgz \
+    PDFQUERY_PREFIX="$HOME/.local" sh
+```
+
+`PDFQUERY_PACKAGE` accepts any npm package spec, local tarball path, or tarball URL. If the chosen prefix's `bin` directory is not on `PATH`, the installer prints the exact directory to add.
+
+### Container acceptance harness
+
+Stage only the packed tarball, `fixtures/tagged-report.pdf`, `install.sh`, and `scripts/acceptance.sh` into each clean container. Run the two modes separately:
+
+```sh
+sh ./acceptance.sh npx ./pdfquery-0.3.0.tgz ./report.pdf
+sh ./acceptance.sh install ./pdfquery-0.3.0.tgz ./report.pdf ./install.sh
+```
+
+The first mode runs npx against the explicit artifact from a clean temporary working directory/cache. The second starts a temporary local Node HTTP server, fetches `install.sh` with curl, installs the tarball URL to an isolated prefix, and invokes that exact prefix's binary. Both assert the exact `Quarterly revenue` result and trap all temporary/server cleanup. Host these commands with Crabbox only through `--provider local-container`; the harness itself never falls back to a checkout or globally installed `pdfquery`.
+
+## JavaScript wrapper
+
+The existing collection and event API remains available as the package's default export:
+
 ```ts
 import pdfquery from 'pdfquery'
 
@@ -35,15 +105,15 @@ pdfquery is a minimal, tree-agnostic, jQuery-style wrapper for object-shaped PDF
 
 The mental model: facets push events via `.trigger()`, consumers subscribe via `.on()`, and pdfquery is the tree-indexed broker in between.
 
-## Install
+### Library install
 
 ```sh
 npm install pdfquery
 ```
 
-ESM only. Zero runtime dependencies. Runs in browsers, Node >=18, Cloudflare Workers, Bun, and Deno-compatible ESM environments.
+ESM only. The wrapper itself remains environment-neutral; the CLI requires Node >=20.16 and its tagged-PDF runtime dependencies.
 
-## Typed Events
+### Typed Events
 
 ```ts
 import pdfquery from 'pdfquery'
@@ -68,7 +138,7 @@ $.trigger('load', undefined)
 
 Unknown event names are still allowed and use `unknown` detail, which keeps pdfquery open to event names created by plugins, parser facets, and application code.
 
-## Surface
+### Surface
 
 | API | Description |
 | --- | --- |
@@ -89,7 +159,7 @@ Unknown event names are still allowed and use `unknown` detail, which keeps pdfq
 | `[index]` | Indexed access to nodes. |
 | `[Symbol.iterator]` | Use `for...of`, spread, or `Array.from`. |
 
-## Errors
+### Errors
 
 If an event handler throws, pdfquery continues invoking the remaining handlers. It then emits an `error` event on the same node with:
 
@@ -99,15 +169,17 @@ If an event handler throws, pdfquery continues invoking the remaining handlers. 
 
 If no `error` listener is registered anywhere in the triggering collection, the original error is rethrown synchronously.
 
-## What pdfquery Does Not Do
+### What the wrapper does not do
 
-pdfquery v0.2 has no selector engine, traversal, mutation, content access, style helpers, ajax, DOM event bridge, or ready callback. See [divergence.md](./divergence.md) for the full jQuery divergence list.
+The JavaScript wrapper has no selector engine, traversal, mutation, content access, style helpers, ajax, DOM event bridge, or ready callback. The executable delegates direct tagged-PDF parsing and structural selection to `@okrapdf/pdfdom/native`. See [divergence.md](./divergence.md) for the wrapper's full jQuery divergence list.
 
-## Companion Parser
+## Native dependency boundary
 
-Tree construction and provider adapters are moving to `@okrapdf/doc-parser` (WIP). Use that package, or your own parser/index, to produce the object-shaped nodes that pdfquery wraps.
+`src/cli.ts` imports exactly `@okrapdf/pdfdom/native`. During this coordinated pre-release, TypeScript resolves that one import to the sibling `../pdfdom/src/native.ts` entry and tsup embeds the native slice in `dist/cli.js`. `pdf-lib` and `pdfjs-dist` remain ordinary published runtime dependencies. `npm run check:dist` fails if the packed CLI still contains a runtime `@okrapdf/pdfdom` import. No pdfdom source is copied into this repository.
 
-## v1 Roadmap
+Source builds and CI therefore require a sibling `pdfdom` checkout containing the 0.2 native entry. Release sequencing is explicit: land and validate the pdfdom 0.2 native package first, then run pdfquery CI and release pdfquery. The registry's existing pdfdom 0.1 package is not a build substitute. Once `pdfquery` is packed, its executable is self-contained and neither npx nor the installer resolves pdfdom from the registry.
+
+## Wrapper roadmap
 
 - Keep the wrapper/event core small and dependency-free.
 - Stabilize interop with `@okrapdf/doc-parser`.

@@ -1,10 +1,17 @@
 import { defineConfig } from 'tsup'
+import packageJson from './package.json' with { type: 'json' }
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: ['src/index.ts', 'src/cli.ts'],
   format: ['esm'],
   dts: true,
   minify: true,
   target: 'es2022',
-  outDir: 'dist'
+  outDir: 'dist',
+  clean: true,
+  splitting: false,
+  external: ['pdf-lib', /^pdfjs-dist(?:\/.*)?$/],
+  define: {
+    PDFQUERY_VERSION: JSON.stringify(packageJson.version)
+  }
 })
