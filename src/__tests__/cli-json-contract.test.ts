@@ -24,15 +24,94 @@ describe('pdfquery CLI JSON contract', () => {
 
     expect(result.code).toBe(0)
     expect(result.stderr).toBe('')
-    expect(parseJson(result.stdout)).toMatchObject({
-      selector: '*',
-      count: 3,
-      results: [
-        { id: 'page-1', role: 'page', page: 1, pages: [1], text: 'Quarterly revenue' },
-        { id: 'struct-7-0', role: 'Root', rawRole: 'StructTreeRoot', parent: null },
-        { id: 'struct-6-0', role: 'H1', rawRole: 'ReportHeading', text: 'Quarterly revenue' }
+    const payload = parseJson(result.stdout) as {
+      selector: string
+      count: number
+      results: Array<{ id: string }>
+      diagnostics: unknown[]
+    }
+
+    expect(payload.selector).toBe('*')
+    expect(payload.count).toBe(3)
+    expect(payload.diagnostics).toEqual([])
+    expect(payload.results.map((node) => node.id)).toEqual([
+      'page-1',
+      'struct-7-0',
+      'struct-6-0'
+    ])
+    expect(payload.results[2]).toEqual({
+      id: 'struct-6-0',
+      role: 'H1',
+      rawRole: 'ReportHeading',
+      parent: 'struct-7-0',
+      children: [],
+      text: 'Quarterly revenue',
+      ownText: 'Quarterly revenue',
+      page: 1,
+      pages: [1],
+      mcids: [0],
+      content: [{ type: 'content', page: 1, mcid: 0 }],
+      language: 'en-US',
+      bbox: {
+        x: 0.11764705882352941,
+        y: 0.06915151515151516,
+        width: 0.313843137254902,
+        height: 0.030303030303030304,
+        page: 1,
+        source: 'text',
+        coordinateSpace: 'normalized-page'
+      },
+      bboxes: [
+        {
+          x: 0.11764705882352941,
+          y: 0.06915151515151516,
+          width: 0.313843137254902,
+          height: 0.030303030303030304,
+          page: 1,
+          source: 'text',
+          coordinateSpace: 'normalized-page'
+        }
       ],
-      diagnostics: []
+      attributes: {
+        Type: 'StructElem',
+        S: 'ReportHeading',
+        Pg: { ref: '3 0 R' },
+        Lang: 'en-US',
+        role: 'H1',
+        type: 'H1',
+        rawRole: 'ReportHeading',
+        lang: 'en-US',
+        language: 'en-US',
+        page: 1,
+        pages: [1],
+        mcids: [0],
+        bbox: {
+          x: 0.11764705882352941,
+          y: 0.06915151515151516,
+          width: 0.313843137254902,
+          height: 0.030303030303030304,
+          page: 1,
+          source: 'text',
+          coordinateSpace: 'normalized-page'
+        },
+        bboxes: [
+          {
+            x: 0.11764705882352941,
+            y: 0.06915151515151516,
+            width: 0.313843137254902,
+            height: 0.030303030303030304,
+            page: 1,
+            source: 'text',
+            coordinateSpace: 'normalized-page'
+          }
+        ]
+      },
+      rawAttributes: {
+        Type: 'StructElem',
+        S: 'ReportHeading',
+        Pg: { ref: '3 0 R' },
+        Lang: 'en-US'
+      }
     })
   })
 

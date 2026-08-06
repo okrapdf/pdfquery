@@ -41,8 +41,8 @@ The JSON shape is:
 
 ```json
 {
-  "selector": "H1",
-  "count": 1,
+  "selector": "H6",
+  "count": 0,
   "results": [],
   "diagnostics": []
 }
