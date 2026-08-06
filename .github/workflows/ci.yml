@@ -19,7 +19,7 @@ jobs:
       # merging/releasing this workflow; registry pdfdom 0.1 is not sufficient.
       - uses: actions/checkout@v4
         with:
-          repository: okra-project/pdfdom
+          repository: okrapdf/pdfdom
           path: pdfdom
       - uses: actions/setup-node@v4
         with:

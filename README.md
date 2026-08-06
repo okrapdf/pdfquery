@@ -41,14 +41,14 @@ npx --yes --package ./pdfquery-0.3.0.tgz -- \
 The production installer defaults to `pdfquery@latest` under the user-local `$HOME/.local` prefix, never invokes `sudo`, and requires Node.js >= 20.16 plus npm:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/okra-project/pdfquery/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/okrapdf/pdfquery/main/install.sh | sh
 pdfquery report.pdf 'H1'
 ```
 
 For a pre-publish tarball or a user-owned install prefix:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/okra-project/pdfquery/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/okrapdf/pdfquery/main/install.sh \
   | PDFQUERY_PACKAGE=https://example.test/pdfquery-0.3.0.tgz \
     PDFQUERY_PREFIX="$HOME/.local" sh
 ```

@@ -17,11 +17,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/okra-project/pdfquery.git"
+    "url": "https://github.com/okrapdf/pdfquery.git"
   },
-  "homepage": "https://github.com/okra-project/pdfquery#readme",
+  "homepage": "https://github.com/okrapdf/pdfquery#readme",
   "bugs": {
-    "url": "https://github.com/okra-project/pdfquery/issues"
+    "url": "https://github.com/okrapdf/pdfquery/issues"
   },
   "keywords": ["pdf", "query", "cli", "tagged-pdf", "accessibility", "structtree"],
   "dependencies": {
