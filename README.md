@@ -28,6 +28,80 @@ pdfquery <file.pdf|-> <selector> [options]
 
 Selectors include semantic roles (`H1`, `P`, `Table`), descendant and child combinators (`Sect > P`), attributes (`Figure[alt*="revenue"]`), `:contains(...)`, comma groups, and virtual page scopes (`page[page=4] H2`).
 
+### JSON output contract
+
+Use `--output json` or `-o json` when another tool needs a stable envelope:
+
+```sh
+pdfquery report.pdf H1 -o json | jq ".results"
+pdfquery report.pdf H1 -o json | jq -r ".results[].text"
+```
+
+The JSON shape is:
+
+```json
+{
+  "selector": "H1",
+  "count": 1,
+  "results": [],
+  "diagnostics": []
+}
+```
+
+`results` is ordered in document-query order. Comma groups and overlapping
+selectors de-duplicate by node identity, so `H1,H1` reports one heading once.
+Zero matches are successful: the command exits `0` and prints `count: 0`,
+`results: []`, and the parser diagnostics collected while opening the PDF.
+Operational errors, such as a missing file or an untagged PDF, are written to
+stderr and exit non-zero; stdout is reserved for valid JSON in JSON mode.
+
+Structure-node results contain the node identity and structural metadata:
+
+```json
+{
+  "id": "struct-6-0",
+  "role": "H1",
+  "rawRole": "ReportHeading",
+  "parent": "struct-7-0",
+  "children": [],
+  "text": "Quarterly revenue",
+  "ownText": "Quarterly revenue",
+  "page": 1,
+  "pages": [1],
+  "mcids": [0],
+  "content": [{ "type": "content", "page": 1, "mcid": 0 }],
+  "language": "en-US",
+  "bbox": {
+    "x": 0.11764705882352941,
+    "y": 0.06915151515151516,
+    "width": 0.313843137254902,
+    "height": 0.030303030303030304,
+    "page": 1,
+    "source": "text",
+    "coordinateSpace": "normalized-page"
+  },
+  "bboxes": [],
+  "attributes": {},
+  "rawAttributes": {}
+}
+```
+
+Nullable fields use `null` when the structure has no value. For example, the
+root node has `"parent": null`; leaf nodes use an empty `children` array. Virtual
+page results use the same envelope but a smaller result object:
+
+```json
+{
+  "id": "page-1",
+  "role": "page",
+  "page": 1,
+  "pages": [1],
+  "text": "Quarterly revenue",
+  "width": 612,
+  "height": 792
+}
+```
+
 To test an unpublished artifact exactly as npx will install it:
 
 ```sh
