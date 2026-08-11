@@ -4,6 +4,81 @@ import { runPdfQueryCli } from '../cli.js'
 
 const fixturePath = fileURLToPath(new URL('../../fixtures/tagged-report.pdf', import.meta.url))
 
+const expectedHeadingResult = {
+  id: 'struct-6-0',
+  role: 'H1',
+  rawRole: 'ReportHeading',
+  parent: 'struct-7-0',
+  children: [],
+  text: 'Quarterly revenue',
+  ownText: 'Quarterly revenue',
+  page: 1,
+  pages: [1],
+  mcids: [0],
+  content: [{ type: 'content', page: 1, mcid: 0 }],
+  language: 'en-US',
+  bbox: {
+    x: 0.11764705882352941,
+    y: 0.06915151515151516,
+    width: 0.313843137254902,
+    height: 0.030303030303030304,
+    page: 1,
+    source: 'text',
+    coordinateSpace: 'normalized-page'
+  },
+  bboxes: [
+    {
+      x: 0.11764705882352941,
+      y: 0.06915151515151516,
+      width: 0.313843137254902,
+      height: 0.030303030303030304,
+      page: 1,
+      source: 'text',
+      coordinateSpace: 'normalized-page'
+    }
+  ],
+  attributes: {
+    Type: 'StructElem',
+    S: 'ReportHeading',
+    Pg: { ref: '3 0 R' },
+    Lang: 'en-US',
+    role: 'H1',
+    type: 'H1',
+    rawRole: 'ReportHeading',
+    lang: 'en-US',
+    language: 'en-US',
+    page: 1,
+    pages: [1],
+    mcids: [0],
+    bbox: {
+      x: 0.11764705882352941,
+      y: 0.06915151515151516,
+      width: 0.313843137254902,
+      height: 0.030303030303030304,
+      page: 1,
+      source: 'text',
+      coordinateSpace: 'normalized-page'
+    },
+    bboxes: [
+      {
+        x: 0.11764705882352941,
+        y: 0.06915151515151516,
+        width: 0.313843137254902,
+        height: 0.030303030303030304,
+        page: 1,
+        source: 'text',
+        coordinateSpace: 'normalized-page'
+      }
+    ]
+  },
+  rawAttributes: {
+    Type: 'StructElem',
+    S: 'ReportHeading',
+    Pg: { ref: '3 0 R' },
+    Lang: 'en-US'
+  }
+}
+
 async function run(argv: string[]) {
   let stdout = ''
   let stderr = ''
@@ -39,80 +114,7 @@ describe('pdfquery CLI JSON contract', () => {
       'struct-7-0',
       'struct-6-0'
     ])
-    expect(payload.results[2]).toEqual({
-      id: 'struct-6-0',
-      role: 'H1',
-      rawRole: 'ReportHeading',
-      parent: 'struct-7-0',
-      children: [],
-      text: 'Quarterly revenue',
-      ownText: 'Quarterly revenue',
-      page: 1,
-      pages: [1],
-      mcids: [0],
-      content: [{ type: 'content', page: 1, mcid: 0 }],
-      language: 'en-US',
-      bbox: {
-        x: 0.11764705882352941,
-        y: 0.06915151515151516,
-        width: 0.313843137254902,
-        height: 0.030303030303030304,
-        page: 1,
-        source: 'text',
-        coordinateSpace: 'normalized-page'
-      },
-      bboxes: [
-        {
-          x: 0.11764705882352941,
-          y: 0.06915151515151516,
-          width: 0.313843137254902,
-          height: 0.030303030303030304,
-          page: 1,
-          source: 'text',
-          coordinateSpace: 'normalized-page'
-        }
-      ],
-      attributes: {
-        Type: 'StructElem',
-        S: 'ReportHeading',
-        Pg: { ref: '3 0 R' },
-        Lang: 'en-US',
-        role: 'H1',
-        type: 'H1',
-        rawRole: 'ReportHeading',
-        lang: 'en-US',
-        language: 'en-US',
-        page: 1,
-        pages: [1],
-        mcids: [0],
-        bbox: {
-          x: 0.11764705882352941,
-          y: 0.06915151515151516,
-          width: 0.313843137254902,
-          height: 0.030303030303030304,
-          page: 1,
-          source: 'text',
-          coordinateSpace: 'normalized-page'
-        },
-        bboxes: [
-          {
-            x: 0.11764705882352941,
-            y: 0.06915151515151516,
-            width: 0.313843137254902,
-            height: 0.030303030303030304,
-            page: 1,
-            source: 'text',
-            coordinateSpace: 'normalized-page'
-          }
-        ]
-      },
-      rawAttributes: {
-        Type: 'StructElem',
-        S: 'ReportHeading',
-        Pg: { ref: '3 0 R' },
-        Lang: 'en-US'
-      }
-    })
+    expect(payload.results[2]).toEqual(expectedHeadingResult)
   })
 
   it('de-duplicates overlapping selector groups by node identity', async () => {
@@ -120,10 +122,10 @@ describe('pdfquery CLI JSON contract', () => {
 
     expect(result.code).toBe(0)
     expect(result.stderr).toBe('')
-    expect(parseJson(result.stdout)).toMatchObject({
+    expect(parseJson(result.stdout)).toEqual({
       selector: 'H1,H1',
       count: 1,
-      results: [{ id: 'struct-6-0', role: 'H1' }],
+      results: [expectedHeadingResult],
       diagnostics: []
     })
   })
