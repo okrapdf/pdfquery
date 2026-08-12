@@ -10,7 +10,7 @@ import {
 
 declare const PDFQUERY_VERSION: string
 
-type OutputFormat = 'text' | 'json' | 'size'
+type OutputFormat = 'text' | 'json' | 'json-array' | 'jsonl' | 'size'
 type QueryNode = PdfStructureNode | PdfStructurePage
 
 interface CliOptions {
@@ -125,7 +125,10 @@ function parseArgs(argv: readonly string[]): CliOptions {
 
   if (positional.length > 2) throw new Error(`unknown argument: ${positional[2]}`)
   if (options.attribute && options.output !== 'text') {
-    throw new Error('--attribute cannot be combined with --output json or size')
+    if (options.output === 'json' || options.output === 'size') {
+      throw new Error('--attribute cannot be combined with --output json or size')
+    }
+    throw new Error(`--attribute cannot be combined with --output ${options.output}`)
   }
   options.source = positional[0]
   options.selector = positional[1]
@@ -133,8 +136,16 @@ function parseArgs(argv: readonly string[]): CliOptions {
 }
 
 function parseOutput(value: string): OutputFormat {
-  if (value === 'text' || value === 'json' || value === 'size') return value
-  throw new Error(`unknown output format ${JSON.stringify(value)}; expected text, json, or size`)
+  if (
+    value === 'text' ||
+    value === 'json' ||
+    value === 'json-array' ||
+    value === 'jsonl' ||
+    value === 'size'
+  ) return value
+  throw new Error(
+    `unknown output format ${JSON.stringify(value)}; expected text, json, json-array, jsonl, or size`
+  )
 }
 
 function readValue(argv: readonly string[], index: number, flag: string): string {
@@ -152,15 +163,23 @@ function formatResults(
     return lines(results.map((node) => formatValue(readAttribute(node, options.attribute!))))
   }
   if (options.output === 'size') return `${results.length}\n`
+  if (options.output === 'text') return lines(results.map((node) => node.text))
+  const serializedResults = results.map((node) => node.toJSON())
   if (options.output === 'json') {
     return `${JSON.stringify({
       selector: options.selector,
       count: results.length,
-      results: results.map((node) => node.toJSON()),
+      results: serializedResults,
       diagnostics
     }, null, 2)}\n`
   }
-  return lines(results.map((node) => node.text))
+  if (options.output === 'json-array') {
+    return `${JSON.stringify(serializedResults, null, 2)}\n`
+  }
+  if (options.output === 'jsonl') {
+    return lines(serializedResults.map((result) => JSON.stringify(result)))
+  }
+  throw new Error(`unsupported output format: ${options.output}`)
 }
 
 function lines(values: readonly string[]): string {
@@ -202,7 +221,7 @@ function formatValue(value: unknown): string {
 }
 
 function helpText(): string {
-  return `pdfquery ${PDFQUERY_VERSION}\n\nUsage:\n  pdfquery <file.pdf|-> <selector> [options]\n\nOptions:\n  -o, --output <text|json|size>  Output format (default: text)\n  -a, --attribute <name>        Print one node attribute per match\n  -h, --help                    Show help\n  -v, --version                 Show version\n\nExamples:\n  pdfquery report.pdf 'H1'\n  pdfquery report.pdf 'Figure[alt*="revenue"]' -a alt\n  cat report.pdf | pdfquery - 'Table > TR > TD' -o json\n`
+  return `pdfquery ${PDFQUERY_VERSION}\n\nUsage:\n  pdfquery <file.pdf|-> <selector> [options]\n\nOptions:\n  -o, --output <text|json|json-array|jsonl|size>\n                                Output format (default: text)\n  -a, --attribute <name>        Print one node attribute per match\n  -h, --help                    Show help\n  -v, --version                 Show version\n\nExamples:\n  pdfquery report.pdf 'H1'\n  pdfquery report.pdf 'Figure[alt*="revenue"]' -a alt\n  cat report.pdf | pdfquery - 'Table > TR > TD' -o json\n  pdfquery report.pdf 'H1' -o json-array | jq '.[]'\n  pdfquery report.pdf 'H1' -o jsonl | jq -c 'select(.page == 1)'\n`
 }
 
 function errorMessage(error: unknown): string {

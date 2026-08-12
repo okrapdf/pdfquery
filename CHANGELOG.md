@@ -1,8 +1,8 @@
 ## v0.3.0 — unreleased
 
 - Add the sole public `pdfquery` executable for direct local tagged-PDF queries.
-- Default `pdfquery report.pdf 'H1'` output is matched text, with JSON, size,
-  and attribute output available explicitly.
+- Default `pdfquery report.pdf 'H1'` output is matched text, with JSON envelope,
+  result-only JSON array, JSONL, size, and attribute output available explicitly.
 - Add deterministic tagged-PDF, npx packaging, and safe POSIX installer coverage.
 - Preserve the v0.2 collection and WeakMap-backed event API.
 
