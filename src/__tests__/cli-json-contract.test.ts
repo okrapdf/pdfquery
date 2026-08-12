@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it, vi } from 'vitest'
-import { runPdfQueryCli } from '../cli.js'
+import { runPdfQueryCli, type PdfQueryCliIo } from '../cli.js'
 
 const fixturePath = fileURLToPath(new URL('../../fixtures/tagged-report.pdf', import.meta.url))
 
@@ -79,14 +79,58 @@ const expectedHeadingResult = {
   }
 }
 
-async function run(argv: string[]) {
+const expectedPageResult = {
+  id: 'page-1',
+  role: 'page',
+  page: 1,
+  pages: [1],
+  text: 'Quarterly revenue',
+  width: 612,
+  height: 792
+}
+
+type MockQueryNode = {
+  text: string
+  toJSON(): Record<string, unknown>
+}
+
+async function run(argv: string[], overrides: Partial<PdfQueryCliIo> = {}) {
   let stdout = ''
   let stderr = ''
   const code = await runPdfQueryCli(argv, {
+    ...overrides,
     stdout: (text) => { stdout += text },
     stderr: (text) => { stderr += text }
   })
   return { code, stdout, stderr }
+}
+
+async function runWithMockedDocument(
+  argv: string[],
+  results: MockQueryNode[],
+  diagnostics: unknown[] = []
+) {
+  vi.resetModules()
+  vi.doMock('@okrapdf/pdfdom/native', () => ({
+    openTaggedPdf: vi.fn(async () => ({
+      query: () => results,
+      diagnostics
+    }))
+  }))
+
+  try {
+    const { runPdfQueryCli: runMockedCli } = await import('../cli.js')
+    let stdout = ''
+    let stderr = ''
+    const code = await runMockedCli(argv, {
+      readFile: async () => new Uint8Array([37, 80, 68, 70]),
+      stdout: (text) => { stdout += text },
+      stderr: (text) => { stderr += text }
+    })
+    return { code, stdout, stderr }
+  } finally {
+    vi.doUnmock('@okrapdf/pdfdom/native')
+  }
 }
 
 function parseJson(stdout: string): unknown {
@@ -169,6 +213,92 @@ describe('pdfquery CLI JSON contract', () => {
     expect(result.code).toBe(1)
     expect(result.stdout).toBe('')
     expect(result.stderr).toMatch(/^Error: /)
+  })
+})
+
+describe('pdfquery CLI result-only JSON contracts', () => {
+  const formats = ['json-array', 'jsonl'] as const
+
+  it.each(formats)('%s emits every serialized match in document-query order', async (format) => {
+    const result = await run([fixturePath, '*', '-o', format])
+
+    expect(result.code).toBe(0)
+    expect(result.stderr).toBe('')
+    const matches = format === 'json-array'
+      ? JSON.parse(result.stdout) as unknown[]
+      : result.stdout.trimEnd().split('\n').map((line) => JSON.parse(line) as unknown)
+
+    expect(matches).toHaveLength(3)
+    expect(matches[0]).toEqual(expectedPageResult)
+    expect(matches[2]).toEqual(expectedHeadingResult)
+    expect(result.stdout).toBe(format === 'json-array'
+      ? `${JSON.stringify(matches, null, 2)}\n`
+      : `${matches.map((match) => JSON.stringify(match)).join('\n')}\n`)
+  })
+
+  it('defines exact successful empty output for both result-only modes', async () => {
+    expect(await run([fixturePath, 'H6', '-o', 'json-array'])).toEqual({
+      code: 0,
+      stdout: '[]\n',
+      stderr: ''
+    })
+    expect(await run([fixturePath, 'H6', '-o', 'jsonl'])).toEqual({
+      code: 0,
+      stdout: '',
+      stderr: ''
+    })
+  })
+
+  it.each(formats)('%s escapes multiline text and omits diagnostics', async (format) => {
+    const serializedNode = {
+      id: 'struct-multiline',
+      role: 'P',
+      text: 'Line one\nLine two'
+    }
+    const result = await runWithMockedDocument(
+      ['fixture.pdf', 'P', '-o', format],
+      [{ text: serializedNode.text, toJSON: () => serializedNode }],
+      [{ level: 'warning', message: 'parser recovered a node' }]
+    )
+
+    expect(result).toEqual({
+      code: 0,
+      stdout: format === 'json-array'
+        ? `${JSON.stringify([serializedNode], null, 2)}\n`
+        : `${JSON.stringify(serializedNode)}\n`,
+      stderr: ''
+    })
+    expect(result.stdout).toContain('Line one\\nLine two')
+    expect(result.stdout).not.toContain('parser recovered a node')
+    if (format === 'jsonl') expect(result.stdout.split('\n')).toHaveLength(2)
+  })
+
+  it.each(formats)('%s keeps operational errors on stderr and stdout empty', async (format) => {
+    const result = await run(['fixture.pdf', 'H1', '-o', format], {
+      readFile: async () => { throw new Error('fixture read failed') }
+    })
+
+    expect(result).toEqual({
+      code: 1,
+      stdout: '',
+      stderr: 'Error: fixture read failed\n'
+    })
+  })
+
+  it('reports the complete output-format list for invalid values', async () => {
+    expect(await run([fixturePath, 'H1', '-o', 'ndjson'])).toEqual({
+      code: 1,
+      stdout: '',
+      stderr: 'Error: unknown output format "ndjson"; expected text, json, json-array, jsonl, or size\n'
+    })
+  })
+
+  it.each(formats)('rejects attributes combined with %s output', async (format) => {
+    expect(await run([fixturePath, 'H1', '-a', 'role', '-o', format])).toEqual({
+      code: 1,
+      stdout: '',
+      stderr: `Error: --attribute cannot be combined with --output ${format}\n`
+    })
   })
 })
 

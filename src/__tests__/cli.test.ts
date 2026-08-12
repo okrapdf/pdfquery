@@ -66,6 +66,13 @@ describe('pdfquery CLI', () => {
     const help = await run(['--help'])
     expect(help.code).toBe(0)
     expect(help.stdout).toContain("pdfquery <file.pdf|-> <selector>")
+    expect(help.stdout).toContain(
+      '  -o, --output <text|json|json-array|jsonl|size>\n' +
+      '                                Output format (default: text)\n'
+    )
+    expect(help.stdout).not.toContain('\n+                                Output format')
+    expect(help.stdout).toContain("-o json-array | jq '.[]'")
+    expect(help.stdout).toContain("-o jsonl | jq -c 'select(.page == 1)'")
     expect(await run(['--version'])).toEqual({ code: 0, stdout: '0.3.0\n', stderr: '' })
   })
 })

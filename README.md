@@ -20,7 +20,7 @@ Input PDFs must contain a native `StructTreeRoot`. Untagged PDFs fail clearly in
 ```text
 pdfquery <file.pdf|-> <selector> [options]
 
--o, --output text|json|size
+-o, --output text|json|json-array|jsonl|size
 -a, --attribute name
 -h, --help
 -v, --version
@@ -54,6 +54,31 @@ Zero matches are successful: the command exits `0` and prints `count: 0`,
 `results: []`, and the parser diagnostics collected while opening the PDF.
 Operational errors, such as a missing file or an untagged PDF, are written to
 stderr and exit non-zero; stdout is reserved for valid JSON in JSON mode.
+
+#### Result-only JSON projections
+
+Use `json-array` when a consumer needs one top-level match collection. The
+array contains the same serialized result objects, in the same order, as the
+envelope's `results` field:
+
+```sh
+pdfquery report.pdf 'H1,Table' -o json-array | jq '.[]'
+pdfquery report.pdf H1 -o json-array | jq -r '.[].text'
+```
+
+Use `jsonl` to stream one compact JSON object per physical output line. JSON
+escaping keeps embedded newlines inside a result's text from splitting the
+record:
+
+```sh
+pdfquery report.pdf '*' -o jsonl | jq -c 'select(.role == "H1")'
+```
+
+Both result-only modes omit envelope metadata and parser diagnostics. Use
+`json` when those fields are required. Zero matches exit `0`: `json-array`
+prints exactly `[]` followed by a newline, while `jsonl` prints nothing.
+Operational errors go only to stderr, exit non-zero, and leave stdout empty in
+all three machine-readable modes.
 
 Structure-node results contain the node identity and structural metadata:
 
