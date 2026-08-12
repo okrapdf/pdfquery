@@ -36,4 +36,4 @@ jobs:
       - run: npm run test:install
       - run: npm run test:acceptance:syntax
       - run: npm run test:package
-      - run: SIZE=$(gzip -c dist/index.js | wc -c); if [ $SIZE -gt 5120 ]; then echo "Bundle too large: $SIZE"; exit 1; fi
+      - run: 'SIZE=$(gzip -c dist/index.js | wc -c); if [ $SIZE -gt 5120 ]; then echo "Bundle too large: $SIZE"; exit 1; fi'
