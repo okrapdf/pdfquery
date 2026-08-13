@@ -12,7 +12,7 @@
   "exports": {
     ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
   },
-  "files": ["dist", "fixtures", "install.sh", "README.md", "LICENSE", "CHANGELOG.md", "divergence.md"],
+  "files": ["dist", "fixtures", "install.sh", "README.md", "LICENSE", "THIRD_PARTY_NOTICES", "CHANGELOG.md", "divergence.md"],
   "engines": { "node": ">=20.16.0 || >=22.3.0" },
   "license": "MIT",
   "repository": {
@@ -24,15 +24,16 @@
     "url": "https://github.com/okrapdf/pdfquery/issues"
   },
   "keywords": ["pdf", "query", "cli", "tagged-pdf", "accessibility", "structtree"],
-  "dependencies": {
-    "pdf-lib": "1.17.1",
-    "pdfjs-dist": "5.4.394"
-  },
+  "dependencies": {},
   "peerDependencies": {},
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "build": "tsup",
+    "test": "npm run build:native --silent && vitest run",
+    "build:native": "node scripts/build-native.mjs",
+    "build": "tsup && npm run build:native",
+    "benchmark": "node --expose-gc benchmarks/run.mjs --quick",
+    "benchmark:full": "node --expose-gc benchmarks/run.mjs",
+    "benchmark:prepare": "node benchmarks/prepare-baseline.mjs",
     "check:dist": "node scripts/check-dist.mjs",
     "test:package": "npm run build && npm run check:dist && node scripts/test-package.mjs",
     "test:install": "sh -n install.sh",

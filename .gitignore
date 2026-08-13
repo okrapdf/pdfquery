@@ -1,4 +1,8 @@
 node_modules
 dist
+native/pkg
+native/target
+.benchmark-baseline
+benchmarks/results
 *.log
 .DS_Store

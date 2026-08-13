@@ -210,7 +210,7 @@ The mental model: facets push events via `.trigger()`, consumers subscribe via `
 npm install pdfquery
 ```
 
-ESM only. The wrapper itself remains environment-neutral; the CLI requires Node >=20.16 and its tagged-PDF runtime dependencies.
+ESM only. The wrapper itself remains environment-neutral; the CLI requires Node >=20.16. The npm package has no runtime dependencies.
 
 ### Typed Events
 
@@ -270,13 +270,17 @@ If no `error` listener is registered anywhere in the triggering collection, the 
 
 ### What the wrapper does not do
 
-The JavaScript wrapper has no selector engine, traversal, mutation, content access, style helpers, ajax, DOM event bridge, or ready callback. The executable delegates direct tagged-PDF parsing and structural selection to `@okrapdf/pdfdom/native`. See [divergence.md](./divergence.md) for the wrapper's full jQuery divergence list.
+The JavaScript wrapper has no selector engine, traversal, mutation, content access, style helpers, ajax, DOM event bridge, or ready callback. The executable delegates direct tagged-PDF parsing and structural selection to the bundled Rust engine. See [divergence.md](./divergence.md) for the wrapper's full jQuery divergence list.
 
-## Native dependency boundary
+## Rust engine boundary
 
-`src/cli.ts` imports exactly `@okrapdf/pdfdom/native`. During this coordinated pre-release, TypeScript resolves that one import to the sibling `../pdfdom/src/native.ts` entry and tsup embeds the native slice in `dist/cli.js`. `pdf-lib` and `pdfjs-dist` remain ordinary published runtime dependencies. `npm run check:dist` fails if the packed CLI still contains a runtime `@okrapdf/pdfdom` import. No pdfdom source is copied into this repository.
+The collection and event wrapper stays in TypeScript because its contract is JavaScript object identity, typed handlers, and WeakMap-backed event state. The CLI's PDF work is implemented in Rust under `native/`: PDF loading, `StructTreeRoot` traversal, role mapping, marked-content text and geometry, selectors, and ordered JSON serialization. The Rust crate uses Firecrawl's `pdf-inspector` extraction core and `lopdf`, then compiles to a single Node-compatible WebAssembly module included in the npm tarball.
 
-Source builds and CI therefore require a sibling `pdfdom` checkout containing the 0.2 native entry. Release sequencing is explicit: land and validate the pdfdom 0.2 native package first, then run pdfquery CI and release pdfquery. The registry's existing pdfdom 0.1 package is not a build substitute. Once `pdfquery` is packed, its executable is self-contained and neither npx nor the installer resolves pdfdom from the registry.
+Source builds require stable Rust with the `wasm32-unknown-unknown` target and `wasm-pack` 0.15.0. Published users need only Node and npm: `npx`, the installer, stdin input, and every output mode continue to use the same JavaScript CLI interface, while the packed executable is self-contained and performs no native-addon download or postinstall build.
+
+The engine rejects unusually expansive inputs before retaining more than 32 MiB from one decoded stream or 64 MiB of decoded content for one page. Tagged PDFs that exceed either resource limit fail explicitly instead of returning partial query results.
+
+Reproducible before/after performance measurements live in [`benchmarks/`](./benchmarks/README.md). The harness pins the pre-Rust pdfquery and pdfdom commits, verifies ordered result IDs before timing, and reports process, parse, first-query, combined parse/query, steady-query, and protocol-payload measurements separately.
 
 ## Wrapper roadmap
 

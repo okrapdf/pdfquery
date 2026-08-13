@@ -1,6 +1,9 @@
 import { fileURLToPath } from 'node:url'
+import { readFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { describe, expect, it, vi } from 'vitest'
 import { runPdfQueryCli, type PdfQueryCliIo } from '../cli.js'
+import { openTaggedPdf } from '../native.js'
 
 const fixturePath = fileURLToPath(new URL('../../fixtures/tagged-report.pdf', import.meta.url))
 
@@ -111,7 +114,7 @@ async function runWithMockedDocument(
   diagnostics: unknown[] = []
 ) {
   vi.resetModules()
-  vi.doMock('@okrapdf/pdfdom/native', () => ({
+  vi.doMock('../native.js', () => ({
     openTaggedPdf: vi.fn(async () => ({
       query: () => results,
       diagnostics
@@ -129,12 +132,38 @@ async function runWithMockedDocument(
     })
     return { code, stdout, stderr }
   } finally {
-    vi.doUnmock('@okrapdf/pdfdom/native')
+    vi.doUnmock('../native.js')
   }
 }
 
 function parseJson(stdout: string): unknown {
   return JSON.parse(stdout)
+}
+
+function taggedPdfWithExpandedText(): Uint8Array {
+  const content = '/H1 <</MCID 0>> BDC\nBT /F1 24 Tf 72 720 Td (Expanded body) Tj ET'
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 7 0 R /MarkInfo << /Marked true >> >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R /StructParents 0 >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+    '<< /Type /StructElem /S /H1 /P 7 0 R /Pg 3 0 R /K 0 /E (Expanded label) >>',
+    '<< /Type /StructTreeRoot /K [6 0 R] /ParentTree 8 0 R /ParentTreeNextKey 1 >>',
+    '<< /Nums [0 [6 0 R]] >>'
+  ]
+  const encoder = new TextEncoder()
+  let pdf = '%PDF-1.7\n%1234\n'
+  const offsets: number[] = []
+  for (const [index, object] of objects.entries()) {
+    offsets.push(encoder.encode(pdf).byteLength)
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
+  }
+  const xref = encoder.encode(pdf).byteLength
+  pdf += 'xref\n0 9\n0000000000 65535 f \n'
+  pdf += offsets.map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`).join('')
+  pdf += `trailer\n<< /Size 9 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
+  return encoder.encode(pdf)
 }
 
 describe('pdfquery CLI JSON contract', () => {
@@ -158,6 +187,10 @@ describe('pdfquery CLI JSON contract', () => {
       'struct-7-0',
       'struct-6-0'
     ])
+    expect(payload.results[1]).toMatchObject({
+      id: 'struct-7-0',
+      parent: null
+    })
     expect(payload.results[2]).toEqual(expectedHeadingResult)
   })
 
@@ -213,6 +246,120 @@ describe('pdfquery CLI JSON contract', () => {
     expect(result.code).toBe(1)
     expect(result.stdout).toBe('')
     expect(result.stderr).toMatch(/^Error: /)
+  })
+})
+
+describe('pdfquery live attribute contract', () => {
+  it('sends the handle table only for the first successful native query', async () => {
+    const require = createRequire(import.meta.url)
+    const native = require(fileURLToPath(
+      new URL('../../dist/native/pdfquery_native.cjs', import.meta.url)
+    )) as {
+      NativeDocument: new (bytes: Uint8Array) => {
+        queryJson(selector: string, includeHandles: boolean): string
+        free(): void
+      }
+    }
+    const document = new native.NativeDocument(
+      new Uint8Array(await readFile(fixturePath))
+    )
+
+    try {
+      const first = JSON.parse(document.queryJson('H1', true)) as {
+        resultIds: string[]
+        handles?: unknown[]
+      }
+      const repeated = JSON.parse(document.queryJson('H1', false)) as {
+        resultIds: string[]
+        handles?: unknown[]
+      }
+
+      expect(first.resultIds).toEqual(['struct-6-0'])
+      expect(first.handles).toHaveLength(3)
+      expect(repeated.resultIds).toEqual(first.resultIds)
+      expect(repeated).not.toHaveProperty('handles')
+      expect(JSON.stringify(repeated).length).toBeLessThan(JSON.stringify(first).length / 4)
+    } finally {
+      document.free()
+    }
+  })
+
+  it('keeps relationship properties as stable handles while toJSON uses IDs', async () => {
+    const document = await openTaggedPdf(new Uint8Array(await readFile(fixturePath)))
+    const root = document.query('Root')[0] as Record<string, unknown> & { toJSON(): unknown }
+    const heading = document.query('H1')[0] as Record<string, unknown> & { toJSON(): unknown }
+
+    expect(heading.parent).toBe(root)
+    expect((root.children as unknown[])[0]).toBe(heading)
+    expect(document.query('H1')[0]).toBe(heading)
+    expect(heading.toJSON()).toMatchObject({ parent: 'struct-7-0', children: [] })
+    expect(root.toJSON()).toMatchObject({ parent: null, children: ['struct-6-0'] })
+  })
+
+  it('hydrates after an invalid first selector without losing stable identity', async () => {
+    const document = await openTaggedPdf(new Uint8Array(await readFile(fixturePath)))
+
+    expect(() => document.query('H1[')).toThrow('Unterminated attribute selector')
+    const heading = document.query('H1')[0]
+    expect(document.query('H1')[0]).toBe(heading)
+  })
+
+  it('serializes parent and children attributes as their node snapshots', async () => {
+    const all = parseJson((await run([fixturePath, '*', '-o', 'json-array'])).stdout) as Array<{
+      id: string
+    }>
+    const root = all.find((node) => node.id === 'struct-7-0')
+    const heading = all.find((node) => node.id === 'struct-6-0')
+
+    expect(await run([fixturePath, 'H1', '-a', 'parent'])).toEqual({
+      code: 0,
+      stdout: `${JSON.stringify(root)}\n`,
+      stderr: ''
+    })
+    expect(await run([fixturePath, 'Root', '-a', 'children'])).toEqual({
+      code: 0,
+      stdout: `${JSON.stringify([heading])}\n`,
+      stderr: ''
+    })
+  })
+
+  it('preserves virtual page live-only fields', async () => {
+    expect(await run([fixturePath, 'page', '-a', 'pageNumber'])).toEqual({
+      code: 0,
+      stdout: '1\n',
+      stderr: ''
+    })
+    expect(await run([fixturePath, 'page', '-a', 'ownText'])).toEqual({
+      code: 0,
+      stdout: 'Quarterly revenue\n',
+      stderr: ''
+    })
+    expect(await run([fixturePath, 'page', '-a', 'rawAttributes'])).toEqual({
+      code: 0,
+      stdout: '{"page":1,"pageNumber":1,"width":612,"height":792}\n',
+      stderr: ''
+    })
+    expect(await run([fixturePath, 'page', '-a', 'children'])).toEqual({
+      code: 0,
+      stdout: '[]\n',
+      stderr: ''
+    })
+  })
+
+  it('exposes expandedText without adding it to the JSON snapshot', async () => {
+    const bytes = taggedPdfWithExpandedText()
+    const readExpandedFixture = { readFile: async () => bytes }
+
+    expect(await run(['expanded.pdf', 'H1', '-a', 'expandedText'], readExpandedFixture)).toEqual({
+      code: 0,
+      stdout: 'Expanded label\n',
+      stderr: ''
+    })
+    const json = await run(['expanded.pdf', 'H1', '-o', 'json-array'], readExpandedFixture)
+    expect(json.code).toBe(0)
+    expect((parseJson(json.stdout) as Array<Record<string, unknown>>)[0]).not.toHaveProperty(
+      'expandedText'
+    )
   })
 })
 
@@ -305,7 +452,7 @@ describe('pdfquery CLI result-only JSON contracts', () => {
 describe('pdfquery CLI JSON diagnostics contract', () => {
   it('passes parser diagnostics through the JSON envelope', async () => {
     vi.resetModules()
-    vi.doMock('@okrapdf/pdfdom/native', () => ({
+    vi.doMock('../native.js', () => ({
       openTaggedPdf: vi.fn(async () => ({
         query: () => [
           {
@@ -371,6 +518,6 @@ describe('pdfquery CLI JSON diagnostics contract', () => {
       diagnostics: [{ level: 'warning', message: 'recovered malformed structure node' }]
     })
 
-    vi.doUnmock('@okrapdf/pdfdom/native')
+    vi.doUnmock('../native.js')
   })
 })

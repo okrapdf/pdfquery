@@ -4,14 +4,13 @@ import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import {
   openTaggedPdf,
-  type PdfStructureNode,
-  type PdfStructurePage
-} from '@okrapdf/pdfdom/native'
+  type NativeQueryNode
+} from './native.js'
 
 declare const PDFQUERY_VERSION: string
 
 type OutputFormat = 'text' | 'json' | 'json-array' | 'jsonl' | 'size'
-type QueryNode = PdfStructureNode | PdfStructurePage
+type QueryNode = NativeQueryNode
 
 interface CliOptions {
   source?: string

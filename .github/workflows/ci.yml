@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,22 +15,32 @@ jobs:
       run:
         working-directory: pdfquery
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           path: pdfquery
-      # Source builds embed the isolated native entry. Merge pdfdom 0.2 before
-      # merging/releasing this workflow; registry pdfdom 0.1 is not sufficient.
-      - uses: actions/checkout@v4
-        with:
-          repository: okrapdf/pdfdom
-          path: pdfdom
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: pdfquery/package-lock.json
-      - run: npm install --omit=dev --ignore-scripts --no-audit --no-fund
-        working-directory: pdfdom
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # pinned master
+        with:
+          toolchain: 1.93.0
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: taiki-e/install-action@b20dedce73af6905cdc30d6611090c9b67557c8d # v2.85.12
+        with:
+          tool: wasm-pack@0.15.0
+      - run: cargo fmt --manifest-path native/Cargo.toml -- --check
+      - run: cargo clippy --locked --manifest-path native/Cargo.toml -p pdfquery-native --all-targets -- -D warnings
+      - run: cargo check --locked --manifest-path native/Cargo.toml --target wasm32-unknown-unknown
+      - run: cargo clippy --locked --manifest-path native/Cargo.toml -p pdfquery-native --lib --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo test --locked --manifest-path native/Cargo.toml -p pdfquery-native --lib
+      - run: cargo test --manifest-path native/vendor/lopdf/Cargo.toml --lib decompression_limit_test
+      - run: cargo test --manifest-path native/vendor/lopdf/Cargo.toml --lib page_content
+      - run: cargo test --locked --manifest-path native/vendor/pdf-inspector/Cargo.toml --lib extractor::tests::merge_items_never_crosses_mcid_boundaries
+      - run: cargo test --locked --manifest-path native/vendor/pdf-inspector/Cargo.toml --lib extractor::fonts::tests::parse_cid_w_array_range_and_consecutive
+      - run: cargo test --locked --manifest-path native/vendor/pdf-inspector/Cargo.toml --lib extractor::pdfquery_document_tests
       - run: npm ci
       - run: npm run typecheck
       - run: npm test

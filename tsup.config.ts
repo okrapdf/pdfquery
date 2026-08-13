@@ -10,7 +10,6 @@ export default defineConfig({
   outDir: 'dist',
   clean: true,
   splitting: false,
-  external: ['pdf-lib', /^pdfjs-dist(?:\/.*)?$/],
   define: {
     PDFQUERY_VERSION: JSON.stringify(packageJson.version)
   }

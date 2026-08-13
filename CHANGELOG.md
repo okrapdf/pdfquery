@@ -1,6 +1,13 @@
 ## v0.3.0 — unreleased
 
 - Add the sole public `pdfquery` executable for direct local tagged-PDF queries.
+- Replace the sibling `pdfdom`/`pdf-lib`/PDF.js CLI backend with a bundled Rust
+  tagged-PDF and selector engine, while preserving the JavaScript collection
+  and event interface and the CLI output contract.
+- Bound decoded PDF streams and cumulative page content, returning an explicit
+  resource-limit error instead of retaining decompression-bomb output.
+- Add a pinned before/after benchmark harness and compact repeated-query
+  protocol so JavaScript handle definitions cross the WASM boundary only once.
 - Default `pdfquery report.pdf 'H1'` output is matched text, with JSON envelope,
   result-only JSON array, JSONL, size, and attribute output available explicitly.
 - Add deterministic tagged-PDF, npx packaging, and safe POSIX installer coverage.
