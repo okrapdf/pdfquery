@@ -1351,6 +1351,21 @@ mod tests {
     }
 
     #[test]
+    fn matches_bare_attribute_existence() {
+        let nodes = fixture();
+        // Node 14 carries altText; the alt aliases make [alt] resolve to it.
+        assert_eq!(query(&nodes, "Figure[alt]").unwrap(), vec![14]);
+        assert_eq!(query(&nodes, "[alt]").unwrap(), vec![14]);
+        assert_eq!(query(&nodes, "Figure[alt][actualText]").unwrap(), vec![14]);
+        assert_eq!(query(&nodes, "Figure[alt ]").unwrap(), vec![14]);
+        // Node 3 exposes LANGUAGE via case-insensitive key lookup.
+        assert_eq!(query(&nodes, "P[language]").unwrap(), vec![3]);
+        // Attributes absent from every node yield zero matches, not an error.
+        assert_eq!(query(&nodes, "TD[headers]").unwrap(), Vec::<usize>::new());
+        assert_eq!(query(&nodes, "TH[scope]").unwrap(), Vec::<usize>::new());
+    }
+
+    #[test]
     fn rejects_the_same_invalid_selector_forms() {
         let nodes = fixture();
         for selector in [
@@ -1360,7 +1375,7 @@ mod tests {
             "> H1",
             "Sect >",
             "Sect >> P",
-            "Figure[alt]",
+            "Figure[alt=]",
             "Figure[alt$=chart]",
             "Figure[alt=\"chart]",
             "Figure[alt=\"chart\" \"other\"]",

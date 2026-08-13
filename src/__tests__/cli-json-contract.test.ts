@@ -166,6 +166,25 @@ function taggedPdfFixture(content: string, structureElement: string): Uint8Array
     '<< /Type /StructTreeRoot /K [6 0 R] /ParentTree 8 0 R /ParentTreeNextKey 1 >>',
     '<< /Nums [0 [6 0 R]] >>'
   ]
+  return assembleTaggedPdf(objects)
+}
+
+function taggedPdfWithTableHeaderAttributes(): Uint8Array {
+  const content = '/TH <</MCID 0>> BDC\nBT /F1 24 Tf 72 720 Td (Quarter) Tj ET'
+  return assembleTaggedPdf([
+    '<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 7 0 R /MarkInfo << /Marked true >> >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R /StructParents 0 >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
+    '<< /Type /StructElem /S /TH /P 7 0 R /Pg 3 0 R /K 0 /A 9 0 R >>',
+    '<< /Type /StructTreeRoot /K [6 0 R] /ParentTree 8 0 R /ParentTreeNextKey 1 >>',
+    '<< /Nums [0 [6 0 R]] >>',
+    '<< /O /Table /Scope /Row /ColSpan 3 /RowSpan 2 >>'
+  ])
+}
+
+function assembleTaggedPdf(objects: string[]): Uint8Array {
   const encoder = new TextEncoder()
   let pdf = '%PDF-1.7\n%1234\n'
   const offsets: number[] = []
@@ -174,9 +193,9 @@ function taggedPdfFixture(content: string, structureElement: string): Uint8Array
     pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
   }
   const xref = encoder.encode(pdf).byteLength
-  pdf += 'xref\n0 9\n0000000000 65535 f \n'
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
   pdf += offsets.map((offset) => `${String(offset).padStart(10, '0')} 00000 n \n`).join('')
-  pdf += `trailer\n<< /Size 9 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`
   return encoder.encode(pdf)
 }
 
@@ -482,6 +501,72 @@ describe('pdfquery CLI result-only JSON contracts', () => {
       stdout: '',
       stderr: `Error: --attribute cannot be combined with --output ${format}\n`
     })
+  })
+})
+
+describe('pdfquery structure attribute objects', () => {
+  function runTableFixture(argv: string[]) {
+    return run(argv, { readFile: async () => taggedPdfWithTableHeaderAttributes() })
+  }
+
+  it('matches table-owner attributes from an indirect /A attribute object', async () => {
+    const row = await runTableFixture(['table.pdf', 'TH[scope=Row]', '-o', 'json'])
+
+    expect(row.code).toBe(0)
+    expect(row.stderr).toBe('')
+    const payload = parseJson(row.stdout) as {
+      count: number
+      results: Array<{
+        id: string
+        attributes: Record<string, unknown>
+        rawAttributes: Record<string, unknown>
+      }>
+    }
+    expect(payload.count).toBe(1)
+    expect(payload.results[0].id).toBe('struct-6-0')
+    expect(payload.results[0].attributes).toMatchObject({
+      scope: 'Row',
+      colspan: 3,
+      rowspan: 2
+    })
+    expect(payload.results[0].attributes).not.toHaveProperty('O')
+    expect(payload.results[0].attributes).not.toHaveProperty('o')
+    expect(payload.results[0].rawAttributes).toMatchObject({ A: { ref: '9 0 R' } })
+
+    const column = await runTableFixture(['table.pdf', 'TH[scope=Column]', '-o', 'json'])
+    expect(column.code).toBe(0)
+    expect(column.stderr).toBe('')
+    expect((parseJson(column.stdout) as { count: number }).count).toBe(0)
+  })
+
+  it('matches bare attribute-existence selectors with zero-match semantics', async () => {
+    const exists = await runTableFixture(['table.pdf', 'TH[scope]', '-o', 'json'])
+    expect(exists.code).toBe(0)
+    expect(exists.stderr).toBe('')
+    expect((parseJson(exists.stdout) as { count: number }).count).toBe(1)
+
+    const missing = await runTableFixture(['table.pdf', 'TH[headers]', '-o', 'json'])
+    expect(missing.code).toBe(0)
+    expect(missing.stderr).toBe('')
+    expect((parseJson(missing.stdout) as { count: number }).count).toBe(0)
+  })
+
+  it('matches Figure[alt] existence only when /Alt is present', async () => {
+    const figureBytes = taggedPdfFixture(
+      '/Figure <</MCID 0>> BDC\nBT /F1 24 Tf 72 720 Td (Chart) Tj ET',
+      '<< /Type /StructElem /S /Figure /P 7 0 R /Pg 3 0 R /K 0 /Alt (Quarterly revenue chart) >>'
+    )
+    const withAlt = await run(['figure.pdf', 'Figure[alt]', '-o', 'json'], {
+      readFile: async () => figureBytes
+    })
+    expect(withAlt.code).toBe(0)
+    expect(withAlt.stderr).toBe('')
+    expect((parseJson(withAlt.stdout) as { count: number }).count).toBe(1)
+
+    const withoutAlt = await run([fixturePath, 'Figure[alt]', '-o', 'json'])
+    expect(withoutAlt.code).toBe(0)
+    expect(withoutAlt.stderr).toBe('')
+    expect((parseJson(withoutAlt.stdout) as { count: number }).count).toBe(0)
   })
 })
 

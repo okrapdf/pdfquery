@@ -1665,6 +1665,74 @@ mod tests {
         assert!(resolve_object(&document, &Object::Reference(id)).is_none());
     }
 
+    fn table_attribute_document() -> Document {
+        let mut document = Document::new();
+        let mut attributes = Dictionary::new();
+        attributes.set("O", Object::Name(b"Table".to_vec()));
+        attributes.set("Scope", Object::Name(b"Row".to_vec()));
+        attributes.set("ColSpan", Object::Integer(3));
+        attributes.set("RowSpan", Object::Integer(2));
+        document
+            .objects
+            .insert((10, 0), Object::Dictionary(attributes));
+        document
+    }
+
+    #[test]
+    fn indirect_attribute_objects_expose_owner_attributes() {
+        let document = table_attribute_document();
+        let attributes = read_attribute_objects(&document, &Object::Reference((10, 0)));
+        assert_eq!(
+            attributes.get("scope"),
+            Some(&Value::String("Row".to_owned()))
+        );
+        assert_eq!(attributes.get("colspan"), Some(&Value::from(3)));
+        assert_eq!(attributes.get("rowspan"), Some(&Value::from(2)));
+        assert!(!attributes.contains_key("O"));
+        assert!(!attributes.contains_key("o"));
+    }
+
+    #[test]
+    fn direct_and_array_attribute_objects_are_merged() {
+        let document = table_attribute_document();
+        let mut list_attributes = Dictionary::new();
+        list_attributes.set("O", Object::Name(b"List".to_vec()));
+        list_attributes.set("ListNumbering", Object::Name(b"Disc".to_vec()));
+
+        let direct = read_attribute_objects(&document, &Object::Dictionary(list_attributes.clone()));
+        assert_eq!(
+            direct.get("listNumbering"),
+            Some(&Value::String("Disc".to_owned()))
+        );
+
+        let array = read_attribute_objects(
+            &document,
+            &Object::Array(vec![
+                Object::Reference((10, 0)),
+                Object::Dictionary(list_attributes),
+            ]),
+        );
+        assert_eq!(array.get("scope"), Some(&Value::String("Row".to_owned())));
+        assert_eq!(
+            array.get("listNumbering"),
+            Some(&Value::String("Disc".to_owned()))
+        );
+    }
+
+    #[test]
+    fn cyclic_attribute_object_references_are_bounded() {
+        let mut document = Document::new();
+        let id = (11, 0);
+        document.objects.insert(id, Object::Reference(id));
+        assert!(read_attribute_objects(&document, &Object::Reference(id)).is_empty());
+
+        let array_id = (12, 0);
+        document
+            .objects
+            .insert(array_id, Object::Array(vec![Object::Reference(array_id)]));
+        assert!(read_attribute_objects(&document, &Object::Reference(array_id)).is_empty());
+    }
+
     #[test]
     fn cyclic_parent_and_structure_attribute_references_are_bounded() {
         let mut document = Document::new();
