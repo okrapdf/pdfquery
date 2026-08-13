@@ -29,6 +29,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "npm run build:native --silent && vitest run",
+    "test:contract": "npm run build:native --silent && vitest run src/__tests__/cli-json-contract.test.ts",
     "build:native": "node scripts/build-native.mjs",
     "build": "tsup && npm run build:native",
     "benchmark": "node --expose-gc benchmarks/run.mjs --quick",

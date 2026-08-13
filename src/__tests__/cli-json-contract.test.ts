@@ -142,13 +142,27 @@ function parseJson(stdout: string): unknown {
 
 function taggedPdfWithExpandedText(): Uint8Array {
   const content = '/H1 <</MCID 0>> BDC\nBT /F1 24 Tf 72 720 Td (Expanded body) Tj ET'
+  return taggedPdfFixture(
+    content,
+    '<< /Type /StructElem /S /H1 /P 7 0 R /Pg 3 0 R /K 0 /E (Expanded label) >>'
+  )
+}
+
+function taggedPdfWithRecoverableTextDiagnostic(): Uint8Array {
+  return taggedPdfFixture(
+    'BI',
+    '<< /Type /StructElem /S /H1 /P 7 0 R /Pg 3 0 R /K 0 /ActualText (Recovered heading) >>'
+  )
+}
+
+function taggedPdfFixture(content: string, structureElement: string): Uint8Array {
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 7 0 R /MarkInfo << /Marked true >> >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R /StructParents 0 >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
     `<< /Length ${content.length} >>\nstream\n${content}\nendstream`,
-    '<< /Type /StructElem /S /H1 /P 7 0 R /Pg 3 0 R /K 0 /E (Expanded label) >>',
+    structureElement,
     '<< /Type /StructTreeRoot /K [6 0 R] /ParentTree 8 0 R /ParentTreeNextKey 1 >>',
     '<< /Nums [0 [6 0 R]] >>'
   ]
@@ -246,6 +260,28 @@ describe('pdfquery CLI JSON contract', () => {
     expect(result.code).toBe(1)
     expect(result.stdout).toBe('')
     expect(result.stderr).toMatch(/^Error: /)
+  })
+})
+
+describe('pdfquery Rust/WASM contract stability', () => {
+  it('keeps the JSON contract stable across repeated mixed Rust queries', async () => {
+    const document = await openTaggedPdf(new Uint8Array(await readFile(fixturePath)))
+
+    for (let iteration = 0; iteration < 100; iteration += 1) {
+      expect(document.query('H1,H1').map((node) => node.toJSON())).toEqual([
+        expectedHeadingResult
+      ])
+      expect(document.query('page[page=1]').map((node) => node.toJSON())).toEqual([
+        expectedPageResult
+      ])
+      expect(document.query('H6').map((node) => node.toJSON())).toEqual([])
+      expect(document.query('*').map((node) => node.toJSON().id)).toEqual([
+        'page-1',
+        'struct-7-0',
+        'struct-6-0'
+      ])
+      expect(document.diagnostics).toEqual([])
+    }
   })
 })
 
@@ -450,6 +486,36 @@ describe('pdfquery CLI result-only JSON contracts', () => {
 })
 
 describe('pdfquery CLI JSON diagnostics contract', () => {
+  it('passes real Rust recovery diagnostics through the JSON envelope', async () => {
+    const result = await run(['recoverable.pdf', 'H1', '-o', 'json'], {
+      readFile: async () => taggedPdfWithRecoverableTextDiagnostic()
+    })
+
+    expect(result.code).toBe(0)
+    expect(result.stderr).toBe('')
+    const payload = parseJson(result.stdout) as {
+      selector: string
+      count: number
+      results: Array<Record<string, unknown>>
+      diagnostics: unknown[]
+    }
+    expect(payload.selector).toBe('H1')
+    expect(payload.count).toBe(1)
+    expect(payload.results).toHaveLength(1)
+    expect(payload.results[0]).toMatchObject({
+      role: 'H1',
+      text: 'Recovered heading',
+      ownText: 'Recovered heading'
+    })
+    expect(payload.diagnostics).toEqual([
+      {
+        level: 'warning',
+        page: 1,
+        message: "Could not resolve marked-content text for page 1: PDF parsing error: couldn't parse input: invalid content stream"
+      }
+    ])
+  })
+
   it('passes parser diagnostics through the JSON envelope', async () => {
     vi.resetModules()
     vi.doMock('../native.js', () => ({

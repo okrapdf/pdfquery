@@ -55,6 +55,13 @@ Zero matches are successful: the command exits `0` and prints `count: 0`,
 Operational errors, such as a missing file or an untagged PDF, are written to
 stderr and exit non-zero; stdout is reserved for valid JSON in JSON mode.
 
+The contract is enforced against a freshly built Rust/WebAssembly engine on
+every pull request and `main` push. Run the focused gate locally with:
+
+```sh
+npm run test:contract
+```
+
 #### Result-only JSON projections
 
 Use `json-array` when a consumer needs one top-level match collection. The

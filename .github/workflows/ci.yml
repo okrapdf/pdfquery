@@ -43,6 +43,8 @@ jobs:
       - run: cargo test --locked --manifest-path native/vendor/pdf-inspector/Cargo.toml --lib extractor::pdfquery_document_tests
       - run: npm ci
       - run: npm run typecheck
+      - name: Polly JSON contract against Rust/WASM
+        run: npm run test:contract
       - run: npm test
       - run: npm run build
       - run: npm run check:dist
