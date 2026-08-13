@@ -77,6 +77,7 @@ impl Error for SelectorSyntaxError {}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum AttributeOperator {
+    Exists,
     Equal,
     Contains,
     Prefix,
@@ -395,6 +396,19 @@ fn parse_attribute(
     let name = &content[name_start..cursor];
     cursor = skip_whitespace(content, cursor);
 
+    // A bare `[name]` tests attribute existence; anything else requires an
+    // operator and a value.
+    if cursor >= content.len() {
+        return Ok((
+            AttributeSelector {
+                name: name.to_owned(),
+                operator: AttributeOperator::Exists,
+                value: String::new(),
+            },
+            end_index + 1,
+        ));
+    }
+
     let (operator, operator_len) = if content[cursor..].starts_with("*=") {
         (AttributeOperator::Contains, 2)
     } else if content[cursor..].starts_with("^=") {
@@ -653,6 +667,7 @@ fn matches_compound(
     for attribute in &compound.attributes {
         let values = read_attribute_values(node, &attribute.name);
         let matches = match attribute.operator {
+            AttributeOperator::Exists => !values.is_empty(),
             AttributeOperator::Equal => values.iter().any(|value| value == &attribute.value),
             AttributeOperator::Contains => {
                 values.iter().any(|value| value.contains(&attribute.value))

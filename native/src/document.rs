@@ -51,6 +51,7 @@ struct StructureNode {
     language: Option<String>,
     expanded_text: Option<String>,
     raw_attributes: Map<String, Value>,
+    attribute_objects: Map<String, Value>,
     structure_bbox: Option<[f64; 4]>,
     structure_page: Option<u32>,
     text: String,
@@ -250,6 +251,7 @@ fn build_structure(
         language: None,
         expanded_text: None,
         raw_attributes: read_raw_attributes(root_dict),
+        attribute_objects: Map::new(),
         structure_bbox: None,
         structure_page: None,
         text: String::new(),
@@ -395,6 +397,11 @@ fn read_kids(
                 language: read_text(state.document, dict, b"Lang"),
                 expanded_text: read_text(state.document, dict, b"E"),
                 raw_attributes: read_raw_attributes(dict),
+                attribute_objects: dict
+                    .get(b"A")
+                    .ok()
+                    .map(|value| read_attribute_objects(state.document, value))
+                    .unwrap_or_default(),
                 structure_bbox: dict
                     .get(b"A")
                     .ok()
@@ -1203,6 +1210,9 @@ fn node_handle_json(node: &StructureNode, snapshot: &Value) -> Value {
 
 fn node_attributes(node: &StructureNode) -> Map<String, Value> {
     let mut value = node.raw_attributes.clone();
+    for (key, entry) in &node.attribute_objects {
+        value.insert(key.clone(), entry.clone());
+    }
     value.insert("role".to_owned(), Value::String(node.role.clone()));
     value.insert("type".to_owned(), Value::String(node.role.clone()));
     value.insert("rawRole".to_owned(), Value::String(node.raw_role.clone()));
@@ -1365,6 +1375,134 @@ fn pdf_object_value(value: &Object, depth: usize) -> Value {
                 .collect(),
         ),
         other => Value::String(format!("{other:?}")),
+    }
+}
+
+// Structure attribute objects (/A) hold owner-specific standard attributes
+// such as Table /Scope and List /ListNumbering. They may be a single
+// dictionary or an array of dictionaries, direct or indirect, so they are
+// resolved here into a flat selectable map instead of surfacing as an
+// unresolved reference like they do in `rawAttributes`.
+fn read_attribute_objects(document: &Document, raw: &Object) -> Map<String, Value> {
+    let mut attributes = Map::new();
+    collect_attribute_objects(document, raw, 0, &mut HashSet::new(), &mut attributes);
+    attributes
+}
+
+fn collect_attribute_objects(
+    document: &Document,
+    raw: &Object,
+    depth: usize,
+    active_refs: &mut HashSet<ObjectId>,
+    attributes: &mut Map<String, Value>,
+) {
+    if depth > MAX_DEPTH {
+        return;
+    }
+    match raw {
+        Object::Reference(id) => {
+            if !active_refs.insert(*id) {
+                return;
+            }
+            if let Ok(value) = document.get_object(*id) {
+                collect_attribute_objects(document, value, depth + 1, active_refs, attributes);
+            }
+            active_refs.remove(id);
+        }
+        Object::Array(values) => {
+            for value in values {
+                collect_attribute_objects(document, value, depth + 1, active_refs, attributes);
+            }
+        }
+        Object::Dictionary(dict) => {
+            for (key, value) in dict.iter() {
+                // /O names the attribute owner (Table, List, ...); it is not
+                // itself a selectable attribute.
+                if key.as_slice() == b"O" {
+                    continue;
+                }
+                attributes.insert(
+                    attribute_object_key(key),
+                    attribute_object_value(document, value, 0, &mut HashSet::new()),
+                );
+            }
+        }
+        _ => {}
+    }
+}
+
+// Attribute keys are exposed camelCased like /Alt -> alt and /Lang -> lang,
+// with the HTML-style all-lowercase spellings for the spanning attributes.
+fn attribute_object_key(key: &[u8]) -> String {
+    let name = String::from_utf8_lossy(key).into_owned();
+    match name.as_str() {
+        "ColSpan" => "colspan".to_owned(),
+        "RowSpan" => "rowspan".to_owned(),
+        _ => {
+            let mut characters = name.chars();
+            match characters.next() {
+                Some(first) => first.to_lowercase().collect::<String>() + characters.as_str(),
+                None => name,
+            }
+        }
+    }
+}
+
+fn attribute_object_value(
+    document: &Document,
+    value: &Object,
+    depth: usize,
+    visited: &mut HashSet<ObjectId>,
+) -> Value {
+    if depth > MAX_DEPTH {
+        return Value::Null;
+    }
+    match value {
+        Object::Reference(id) => {
+            if !visited.insert(*id) {
+                return Value::Null;
+            }
+            let resolved = document
+                .get_object(*id)
+                .map(|object| attribute_object_value(document, object, depth + 1, visited))
+                .unwrap_or(Value::Null);
+            visited.remove(id);
+            resolved
+        }
+        Object::Null => Value::Null,
+        Object::Boolean(value) => Value::Bool(*value),
+        Object::Integer(value) => Value::from(*value),
+        Object::Real(value) => number_json(clean_pdf_real(*value)),
+        Object::Name(value) => Value::String(String::from_utf8_lossy(value).into_owned()),
+        Object::String(_, _) => Value::String(decode_text_string(value).unwrap_or_default()),
+        Object::Array(values) => Value::Array(
+            values
+                .iter()
+                .map(|value| attribute_object_value(document, value, depth + 1, visited))
+                .collect(),
+        ),
+        Object::Dictionary(dict) => Value::Object(
+            dict.iter()
+                .map(|(key, value)| {
+                    (
+                        String::from_utf8_lossy(key).into_owned(),
+                        attribute_object_value(document, value, depth + 1, visited),
+                    )
+                })
+                .collect(),
+        ),
+        Object::Stream(stream) => Value::Object(
+            stream
+                .dict
+                .iter()
+                .map(|(key, value)| {
+                    (
+                        String::from_utf8_lossy(key).into_owned(),
+                        attribute_object_value(document, value, depth + 1, visited),
+                    )
+                })
+                .collect(),
+        ),
     }
 }
 
