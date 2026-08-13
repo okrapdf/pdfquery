@@ -1,3 +1,12 @@
+## v0.3.2 — 2026-08-12
+
+- Add a named CI gate that rebuilds the Rust/WebAssembly engine and enforces
+  the JSON output contract on every pull request and `main` push.
+- Exercise the contract across repeated mixed native queries and a real Rust
+  malformed-content recovery diagnostic.
+- Verify the installed npm tarball preserves ordering, de-duplication, empty
+  results, virtual-page shape, stderr behavior, and exact build output.
+
 ## v0.3.1 — 2026-08-12
 
 - Replace the sibling `pdfdom`/`pdf-lib`/PDF.js CLI backend with a bundled Rust

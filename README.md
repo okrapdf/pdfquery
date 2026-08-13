@@ -138,7 +138,7 @@ To test an unpublished artifact exactly as npx will install it:
 
 ```sh
 npm pack
-npx --yes --package ./pdfquery-0.3.1.tgz -- \
+npx --yes --package ./pdfquery-0.3.2.tgz -- \
   pdfquery ./fixtures/tagged-report.pdf 'H1'
 ```
 
@@ -155,7 +155,7 @@ For a pre-publish tarball or a user-owned install prefix:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/okrapdf/pdfquery/main/install.sh \
-  | PDFQUERY_PACKAGE=https://example.test/pdfquery-0.3.1.tgz \
+  | PDFQUERY_PACKAGE=https://example.test/pdfquery-0.3.2.tgz \
     PDFQUERY_PREFIX="$HOME/.local" sh
 ```
 
@@ -166,8 +166,8 @@ curl -fsSL https://raw.githubusercontent.com/okrapdf/pdfquery/main/install.sh \
 Stage only the packed tarball, `fixtures/tagged-report.pdf`, `install.sh`, and `scripts/acceptance.sh` into each clean container. Run the two modes separately:
 
 ```sh
-sh ./acceptance.sh npx ./pdfquery-0.3.1.tgz ./report.pdf
-sh ./acceptance.sh install ./pdfquery-0.3.1.tgz ./report.pdf ./install.sh
+sh ./acceptance.sh npx ./pdfquery-0.3.2.tgz ./report.pdf
+sh ./acceptance.sh install ./pdfquery-0.3.2.tgz ./report.pdf ./install.sh
 ```
 
 The first mode runs npx against the explicit artifact from a clean temporary working directory/cache. The second starts a temporary local Node HTTP server, fetches `install.sh` with curl, installs the tarball URL to an isolated prefix, and invokes that exact prefix's binary. Both assert the exact `Quarterly revenue` result and trap all temporary/server cleanup. Host these commands with Crabbox only through `--provider local-container`; the harness itself never falls back to a checkout or globally installed `pdfquery`.
