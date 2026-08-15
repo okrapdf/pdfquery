@@ -1,3 +1,24 @@
+## v0.4.0 — unreleased
+
+- Lock the `-o json` envelope as a tested automation contract: fixed
+  `{selector, count, results, diagnostics}` keys, document-order results with
+  identity de-duplication, exit 0 with `count: 0`/`results: []` for zero
+  matches, and operational errors kept on stderr.
+- Add `-o json-array` (one top-level array of serialized matches, `[]` when
+  empty) and `-o jsonl` (one compact object per match, empty stdout when no
+  matches) for direct `jq .[]` and streaming use.
+- Add `--extract/-e` and `--extract-file/-E` declarative extraction maps:
+  scalar first-match and array all-match semantics, `{selector, value}` field
+  projections, nested maps evaluated relative to the selected node, one stable
+  JSON object per run, and selector-path error reporting.
+- Selector engine (via `@okrapdf/pdfdom` 0.3): attribute existence `[alt]`,
+  `$=`, `~=`, `|=`, the `!=` jQuery extension, `i`/`s` case flags,
+  `:not`/`:has`/`:is`/`:where` composition pseudos, `+`/`~` sibling
+  combinators, and `:first`/`:last`/`:eq(n)` positional filters with
+  PDF-order semantics.
+- Add `fixtures/tagged-report-multi.pdf` plus `scripts/build-fixtures.mjs` for
+  deterministic multi-page contract coverage.
+
 ## v0.3.0 — unreleased
 
 - Add the sole public `pdfquery` executable for direct local tagged-PDF queries.

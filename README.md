@@ -19,20 +19,168 @@ Input PDFs must contain a native `StructTreeRoot`. Untagged PDFs fail clearly in
 
 ```text
 pdfquery <file.pdf|-> <selector> [options]
+pdfquery <file.pdf|-> --extract <json>
+pdfquery <file.pdf|-> --extract-file <map.json|->
 
--o, --output text|json|size
+-o, --output text|json|json-array|jsonl|size
 -a, --attribute name
+-e, --extract json
+-E, --extract-file path|-
 -h, --help
 -v, --version
 ```
 
-Selectors include semantic roles (`H1`, `P`, `Table`), descendant and child combinators (`Sect > P`), attributes (`Figure[alt*="revenue"]`), `:contains(...)`, comma groups, and virtual page scopes (`page[page=4] H2`).
+Selectors include semantic roles (`H1`, `P`, `Table`), `*`, descendant and
+child combinators (`Sect > P`), sibling combinators (`H1 + P`, `H1 ~ L`),
+attributes (`Figure[alt*="revenue"]`, `[lang|=en]`, `[tags~=draft] i`-style
+case flags), composition pseudos (`:not(...)`, `:has(...)`, `:is(...)`,
+`:where(...)`), positional filters (`:first`, `:last`, `:eq(2)`, `:eq(-1)`),
+`:contains(...)`, comma groups, and virtual page scopes (`page[page=4] H2`).
+See [Selector conformance](#selector-conformance) for the full
+accepted/rejected matrix.
+
+## JSON output contract
+
+`--output json` emits one stable envelope on stdout and nothing else; progress,
+warnings, and errors go to stderr:
+
+```json
+{
+  "selector": "H1",
+  "count": 1,
+  "results": [],
+  "diagnostics": []
+}
+```
+
+- `selector` echoes the query as given; `count` equals `results.length`.
+- `results` are serialized in deterministic depth-first document order,
+  de-duplicated by node identity across comma groups.
+- Structure-node results carry `id`, `role`, `rawRole`, `parent`, `children`,
+  `text`, `ownText`, `page`, `pages`, `mcids`, `content`, `altText`,
+  `actualText`, `language`, `bbox`, `bboxes`, `attributes`, `rawAttributes`.
+  `page` and `bbox` are `null` for multi-page nodes; `altText`, `actualText`,
+  and `language` are `null` when absent.
+- Virtual page results (`role: "page"`) carry `id`, `role`, `page`, `pages`,
+  `text`, `width`, `height`.
+- `diagnostics` lists non-fatal warnings such as unresolvable marked content;
+  it is always an array.
+- Zero matches exit 0 with `count: 0` and `results: []`. Operational errors
+  (missing file, untagged PDF, selector syntax errors) print `Error: ...` to
+  stderr and exit 1, leaving stdout empty or untouched valid JSON.
+
+jq usage:
+
+```sh
+pdfquery report.pdf H1 -o json | jq '.results'
+pdfquery report.pdf H1 -o json | jq -r '.results[].text'
+pdfquery report.pdf H6 -o json | jq -e '.count == 0'
+```
+
+`--output json-array` emits one top-level JSON array of the same serialized
+matches (`[]` plus a newline for zero matches); `--output jsonl` emits one
+compact JSON object per line (empty stdout for zero matches), which also keeps
+multiline node text machine-safe. Both exit 0 and keep metadata and
+diagnostics exclusive to the envelope mode:
+
+```sh
+pdfquery report.pdf 'Sect' -o json-array | jq 'length'
+pdfquery report.pdf 'Sect > P' -o jsonl | jq -r '.text'
+```
+
+## Extraction maps
+
+`--extract` (inline JSON) and `--extract-file <path|->` evaluate a declarative,
+Cheerio `$.extract`-style map in a single PDF parse and print one stable JSON
+object:
+
+```sh
+pdfquery report.pdf --extract-file map.json | jq '.sections[0].heading'
+```
+
+```json
+{
+  "title": "H1",
+  "headings": ["H2"],
+  "figures": [
+    {
+      "selector": "Figure",
+      "value": "altText"
+    }
+  ],
+  "sections": [
+    {
+      "selector": "Sect",
+      "value": {
+        "heading": "H2",
+        "paragraphs": ["P"]
+      }
+    }
+  ]
+}
+```
+
+- A scalar selector string returns the first match's text, or `null` when
+  nothing matches. A single-element array returns every match's text (`[]`
+  when empty).
+- `{selector, value}` projects a named serialized field (`"text"`,
+  `"ownText"`, `"role"`, `"page"`, `"pages"`, `"altText"`, `"language"`,
+  `"bbox"`, ...); a missing field name is an error listing the available
+  fields. Omitting `value` defaults to text.
+- A nested map as `value` queries relative to the selected node's descendants
+  (the node itself is excluded; virtual page handles are not in scope). Used
+  inside an array descriptor it maps over every match.
+- Callback/executable values are not part of the CLI grammar: entries must be
+  a selector string, a single-element array, or a `{selector, value}`
+  descriptor.
+- Output keys follow the map's insertion order. Invalid JSON, invalid
+  descriptors, and selector syntax errors fail with exit 1 and an
+  `Error: <path>: ...` message naming the selector path
+  (for example `sections[0].value.heading`).
+- `--extract` cannot be combined with a positional selector, `--attribute`,
+  or `--output`; stdin (`-`) cannot supply both the PDF and the map.
+
+## Selector conformance
+
+Accepted, matched against the native semantic structure tree:
+
+| Form | Example | Meaning |
+| --- | --- | --- |
+| role/type | `H1` | Native or RoleMap-resolved structure role |
+| universal | `*` | Any structure node |
+| descendant / child | `Table TD`, `Sect > P` | Ancestry |
+| sibling | `H1 + P`, `H1 ~ L` | Adjacent/following under the same semantic parent |
+| comma group | `H1, H2` | Ordered, de-duplicated union |
+| attribute | `[alt]`, `[lang=en-US]`, `[alt*="c"]`, `[lang^=e]`, `[lang$=S]`, `[tags~=t]`, `[lang\|=en]`, `[lang!=fr]` | Existence, equality, substring, prefix, suffix, token, hyphen prefix, inequality (jQuery extension: also matches absent) |
+| case flag | `[lang="EN-US" i]` | Case-insensitive value (`s` forces default) |
+| text | `P:contains("revenue")` | Aggregate descendant text |
+| composition | `:not(...)`, `:has(...)`, `:is(...)`, `:where(...)` | Nested selector-list arguments |
+| positional | `P:first`, `P:last`, `P:eq(2)`, `P:eq(-1)` | Filter the branch's document-order match set |
+| page scope | `page[page=4] H2` | Semantic node touching page 4 |
+
+Deliberately rejected (indexed syntax error on stderr, exit 1):
+
+| Form | Example | Reason |
+| --- | --- | --- |
+| class / id | `.intro`, `#title` | PDF structure has no class/id concept |
+| child-position pseudos | `:nth-child(2)` | Not justified by tagged-PDF semantics yet |
+| browser-only pseudos | `:empty`, `:root`, `:visible` | No browser DOM semantics |
+| positional in nested arguments | `:not(P:first)` | Positional filters apply to top-level branches only |
+| relative `:has` arguments | `:has(> Figure)` | Use plain descendant arguments |
+| non-integer `:eq` | `:eq(1.5)` | Malformed index |
+
+Role and attribute names are case-insensitive; attribute and `:contains()`
+values are case-sensitive unless the `i` flag is present. Siblinghood comes
+exclusively from the semantic structure parent's ordered children — virtual
+page membership never creates siblings, and `:has()` never matches through
+page scopes. Positional filters apply after the whole branch matches, per
+comma group.
 
 To test an unpublished artifact exactly as npx will install it:
 
 ```sh
 npm pack
-npx --yes --package ./pdfquery-0.3.0.tgz -- \
+npx --yes --package ./pdfquery-0.4.0.tgz -- \
   pdfquery ./fixtures/tagged-report.pdf 'H1'
 ```
 
@@ -49,7 +197,7 @@ For a pre-publish tarball or a user-owned install prefix:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/okrapdf/pdfquery/main/install.sh \
-  | PDFQUERY_PACKAGE=https://example.test/pdfquery-0.3.0.tgz \
+  | PDFQUERY_PACKAGE=https://example.test/pdfquery-0.4.0.tgz \
     PDFQUERY_PREFIX="$HOME/.local" sh
 ```
 
@@ -60,8 +208,8 @@ curl -fsSL https://raw.githubusercontent.com/okrapdf/pdfquery/main/install.sh \
 Stage only the packed tarball, `fixtures/tagged-report.pdf`, `install.sh`, and `scripts/acceptance.sh` into each clean container. Run the two modes separately:
 
 ```sh
-sh ./acceptance.sh npx ./pdfquery-0.3.0.tgz ./report.pdf
-sh ./acceptance.sh install ./pdfquery-0.3.0.tgz ./report.pdf ./install.sh
+sh ./acceptance.sh npx ./pdfquery-0.4.0.tgz ./report.pdf
+sh ./acceptance.sh install ./pdfquery-0.4.0.tgz ./report.pdf ./install.sh
 ```
 
 The first mode runs npx against the explicit artifact from a clean temporary working directory/cache. The second starts a temporary local Node HTTP server, fetches `install.sh` with curl, installs the tarball URL to an isolated prefix, and invokes that exact prefix's binary. Both assert the exact `Quarterly revenue` result and trap all temporary/server cleanup. Host these commands with Crabbox only through `--provider local-container`; the harness itself never falls back to a checkout or globally installed `pdfquery`.
