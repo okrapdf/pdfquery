@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { readFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
+import { Effect } from 'effect'
 import { describe, expect, it, vi } from 'vitest'
 import { runPdfQueryCli, type PdfQueryCliIo } from '../cli.js'
 import { openTaggedPdf } from '../native.js'
@@ -115,9 +116,9 @@ async function runWithMockedDocument(
 ) {
   vi.resetModules()
   vi.doMock('../native.js', () => ({
-    openTaggedPdf: vi.fn(async () => ({
-      query: () => results,
-      diagnostics
+    openTaggedPdf: vi.fn(() => Effect.succeed({
+      query: () => Effect.succeed(results),
+      diagnostics: Effect.succeed(diagnostics)
     }))
   }))
 
@@ -284,22 +285,22 @@ describe('pdfquery CLI JSON contract', () => {
 
 describe('pdfquery Rust/WASM contract stability', () => {
   it('keeps the JSON contract stable across repeated mixed Rust queries', async () => {
-    const document = await openTaggedPdf(new Uint8Array(await readFile(fixturePath)))
+    const document = await Effect.runPromise(openTaggedPdf(new Uint8Array(await readFile(fixturePath))))
 
     for (let iteration = 0; iteration < 100; iteration += 1) {
-      expect(document.query('H1,H1').map((node) => node.toJSON())).toEqual([
+      expect(Effect.runSync(document.query('H1,H1')).map((node) => node.toJSON())).toEqual([
         expectedHeadingResult
       ])
-      expect(document.query('page[page=1]').map((node) => node.toJSON())).toEqual([
+      expect(Effect.runSync(document.query('page[page=1]')).map((node) => node.toJSON())).toEqual([
         expectedPageResult
       ])
-      expect(document.query('H6').map((node) => node.toJSON())).toEqual([])
-      expect(document.query('*').map((node) => node.toJSON().id)).toEqual([
+      expect(Effect.runSync(document.query('H6')).map((node) => node.toJSON())).toEqual([])
+      expect(Effect.runSync(document.query('*')).map((node) => node.toJSON().id)).toEqual([
         'page-1',
         'struct-7-0',
         'struct-6-0'
       ])
-      expect(document.diagnostics).toEqual([])
+      expect(Effect.runSync(document.diagnostics)).toEqual([])
     }
   })
 })
@@ -340,23 +341,24 @@ describe('pdfquery live attribute contract', () => {
   })
 
   it('keeps relationship properties as stable handles while toJSON uses IDs', async () => {
-    const document = await openTaggedPdf(new Uint8Array(await readFile(fixturePath)))
-    const root = document.query('Root')[0] as Record<string, unknown> & { toJSON(): unknown }
-    const heading = document.query('H1')[0] as Record<string, unknown> & { toJSON(): unknown }
+    const document = await Effect.runPromise(openTaggedPdf(new Uint8Array(await readFile(fixturePath))))
+    const root = Effect.runSync(document.query('Root'))[0] as Record<string, unknown> & { toJSON(): unknown }
+    const heading = Effect.runSync(document.query('H1'))[0] as Record<string, unknown> & { toJSON(): unknown }
 
     expect(heading.parent).toBe(root)
     expect((root.children as unknown[])[0]).toBe(heading)
-    expect(document.query('H1')[0]).toBe(heading)
+    expect(Effect.runSync(document.query('H1'))[0]).toBe(heading)
     expect(heading.toJSON()).toMatchObject({ parent: 'struct-7-0', children: [] })
     expect(root.toJSON()).toMatchObject({ parent: null, children: ['struct-6-0'] })
   })
 
   it('hydrates after an invalid first selector without losing stable identity', async () => {
-    const document = await openTaggedPdf(new Uint8Array(await readFile(fixturePath)))
+    const document = await Effect.runPromise(openTaggedPdf(new Uint8Array(await readFile(fixturePath))))
 
-    expect(() => document.query('H1[')).toThrow('Unterminated attribute selector')
-    const heading = document.query('H1')[0]
-    expect(document.query('H1')[0]).toBe(heading)
+    const failure = Effect.runSync(document.query('H1[').pipe(Effect.flip))
+    expect(failure.message).toContain('Unterminated attribute selector')
+    const heading = Effect.runSync(document.query('H1'))[0]
+    expect(Effect.runSync(document.query('H1'))[0]).toBe(heading)
   })
 
   it('serializes parent and children attributes as their node snapshots', async () => {
@@ -604,8 +606,8 @@ describe('pdfquery CLI JSON diagnostics contract', () => {
   it('passes parser diagnostics through the JSON envelope', async () => {
     vi.resetModules()
     vi.doMock('../native.js', () => ({
-      openTaggedPdf: vi.fn(async () => ({
-        query: () => [
+      openTaggedPdf: vi.fn(() => Effect.succeed({
+        query: () => Effect.succeed([
           {
             toJSON: () => ({
               id: 'struct-warning',
@@ -627,8 +629,8 @@ describe('pdfquery CLI JSON diagnostics contract', () => {
             }),
             text: 'Recovered heading'
           }
-        ],
-        diagnostics: [{ level: 'warning', message: 'recovered malformed structure node' }]
+        ]),
+        diagnostics: Effect.succeed([{ level: 'warning', message: 'recovered malformed structure node' }])
       }))
     }))
 

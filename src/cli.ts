@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { Effect, Schema } from 'effect'
 import {
   openTaggedPdf,
   type NativeQueryNode
@@ -11,6 +12,15 @@ declare const PDFQUERY_VERSION: string
 
 type OutputFormat = 'text' | 'json' | 'json-array' | 'jsonl' | 'size'
 type QueryNode = NativeQueryNode
+
+export class CliArgError extends Schema.TaggedError<CliArgError>()('CliArgError', {
+  message: Schema.String
+}) {}
+
+export class PdfSourceError extends Schema.TaggedError<PdfSourceError>()('PdfSourceError', {
+  message: Schema.String,
+  cause: Schema.Defect()
+}) {}
 
 interface CliOptions {
   source?: string
@@ -40,48 +50,50 @@ export async function runPdfQueryCli(
   io: Partial<PdfQueryCliIo> = {}
 ): Promise<number> {
   const streams = { ...defaultIo, ...io }
-  let options: CliOptions
-  try {
-    options = parseArgs(argv)
-  } catch (error) {
-    streams.stderr(`Error: ${errorMessage(error)}\n`)
-    return 1
-  }
+  const program = Effect.gen(function*() {
+    const options = yield* parseArgs(argv)
 
-  if (options.version) {
-    streams.stdout(`${PDFQUERY_VERSION}\n`)
-    return 0
-  }
-  if (options.help || argv.length === 0) {
-    streams.stdout(helpText())
-    return 0
-  }
-  if (!options.source) {
-    streams.stderr('Error: a PDF path is required.\n')
-    return 1
-  }
-  if (!options.selector) {
-    streams.stderr('Error: a selector is required.\n')
-    return 1
-  }
+    if (options.version) {
+      yield* Effect.sync(() => streams.stdout(`${PDFQUERY_VERSION}\n`))
+      return 0
+    }
+    if (options.help || argv.length === 0) {
+      yield* Effect.sync(() => streams.stdout(helpText()))
+      return 0
+    }
+    if (!options.source) return yield* new CliArgError({ message: 'a PDF path is required.' })
+    if (!options.selector) return yield* new CliArgError({ message: 'a selector is required.' })
 
-  try {
-    const bytes = options.source === '-'
-      ? await streams.readStdin()
-      : await streams.readFile(options.source)
-    if (bytes.byteLength === 0) throw new Error('received an empty PDF source')
+    const bytes = yield* Effect.tryPromise({
+      try: () => options.source === '-'
+        ? streams.readStdin()
+        : streams.readFile(options.source as string),
+      catch: (cause) => new PdfSourceError({ message: errorMessage(cause), cause })
+    })
+    if (bytes.byteLength === 0) return yield* new PdfSourceError({ message: 'received an empty PDF source', cause: undefined })
 
-    const document = await openTaggedPdf(bytes)
-    const results = document.query(options.selector)
-    streams.stdout(formatResults(options, results, document.diagnostics))
+    const document = yield* openTaggedPdf(bytes)
+    const results = yield* document.query(options.selector)
+    const diagnostics = yield* document.diagnostics
+    yield* Effect.sync(() => streams.stdout(formatResults(options, results, diagnostics)))
     return 0
-  } catch (error) {
-    streams.stderr(`Error: ${errorMessage(error)}\n`)
-    return 1
-  }
+  })
+  return Effect.runPromise(program.pipe(
+    Effect.catch((error) => Effect.sync(() => {
+      streams.stderr(`Error: ${error.message}\n`)
+      return 1
+    }))
+  ))
 }
 
-function parseArgs(argv: readonly string[]): CliOptions {
+function parseArgs(argv: readonly string[]): Effect.Effect<CliOptions, CliArgError> {
+  return Effect.try({
+    try: () => parseArgsUnsafe(argv),
+    catch: (cause) => new CliArgError({ message: errorMessage(cause) })
+  })
+}
+
+function parseArgsUnsafe(argv: readonly string[]): CliOptions {
   const options: CliOptions = {
     output: 'text',
     help: false,

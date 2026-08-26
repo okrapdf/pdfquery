@@ -1,3 +1,25 @@
+## Unreleased
+
+Breaking. Convert the TypeScript codebase to Effect-TS (`effect` v4 RC is now
+the package's only runtime dependency). CLI stdout/stderr/exit-code behavior is
+unchanged and enforced by the existing contract tests.
+
+- `pdfquery(...)` is a smart constructor returning
+  `Effect<Collection, PdfQueryInputError>`; constructor `TypeError`s become
+  typed `PdfQueryInputError` failures with the same messages.
+- `on`/`off`/`one`/`each` return `Effect<Collection>` and `trigger` returns
+  `Effect<void, TriggerError>`; an unabsorbed handler throw fails with
+  `TriggerError` carrying the original value in `cause`.
+  `map`/`filter`/`first`/`last`/`eq`, `length`, indexed access, and iteration
+  stay synchronous.
+- `openTaggedPdf` returns `Effect<TaggedPdfDocument, NativeEngineError>`;
+  `document.query` returns `Effect<NativeQueryNode[], NativeQueryError>` and
+  `diagnostics` is a `Ref`-backed `Effect`.
+- The CLI runs as an Effect program with typed `CliArgError`/`PdfSourceError`
+  failures mapped to the same `Error: ...` stderr lines and exit code 1.
+- Ship per-module declarations emitted by `tsc` instead of tsup's dts roller,
+  which cannot handle Effect's tagged-error class types.
+
 ## v0.3.2 — 2026-08-12
 
 - Add a named CI gate that rebuilds the Rust/WebAssembly engine and enforces

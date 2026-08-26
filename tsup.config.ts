@@ -4,7 +4,7 @@ import packageJson from './package.json' with { type: 'json' }
 export default defineConfig({
   entry: ['src/index.ts', 'src/cli.ts'],
   format: ['esm'],
-  dts: true,
+  dts: false,
   minify: true,
   target: 'es2022',
   outDir: 'dist',

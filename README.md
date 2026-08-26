@@ -174,37 +174,47 @@ The first mode runs npx against the explicit artifact from a clean temporary wor
 
 ## JavaScript wrapper
 
-The existing collection and event API remains available as the package's default export:
+The collection and event API is available as the package's default export. It is built on [Effect](https://effect.website): the constructor is a smart constructor, and the eventful methods return `Effect` values with typed error channels instead of chaining synchronously.
 
 ```ts
+import { Effect } from 'effect'
 import pdfquery from 'pdfquery'
 
 const doc = { id: 'doc-2026-04' }
 const page = { id: 'page-1', number: 1 }
 const annotation = { id: 'annot-7', page: 1 }
 
-const $doc = pdfquery([doc, page, annotation])
+const program = Effect.gen(function*() {
+  const $doc = yield* pdfquery([doc, page, annotation])
 
-$doc.on('change', (event) => {
-  console.log('changed node', event.target, event.detail)
+  yield* $doc.on('change', (event) => {
+    console.log('changed node', event.target, event.detail)
+  })
+
+  yield* $doc.on('annotation', (event) => {
+    console.log('annotation event', event.target, event.detail)
+  })
+
+  yield* $doc.on('verify', (event) => {
+    console.log('verification score', event.detail)
+  })
+
+  yield* $doc.on('load', (event) => {
+    console.log('loaded', event.target)
+  })
+
+  yield* Effect.gen(function*() {
+    const $page = yield* pdfquery(page)
+    yield* $page.trigger('change', { field: 'rotation', value: 90 })
+    const $annotation = yield* pdfquery(annotation)
+    yield* $annotation.trigger('annotation', { x: 148, y: 320, text: 'check total' })
+    const $ = yield* pdfquery(doc)
+    yield* $.trigger('verify', { score: 0.98, reasons: ['totals match'] })
+    yield* $.trigger('load')
+  })
 })
 
-$doc.on('annotation', (event) => {
-  console.log('annotation event', event.target, event.detail)
-})
-
-$doc.on('verify', (event) => {
-  console.log('verification score', event.detail)
-})
-
-$doc.on('load', (event) => {
-  console.log('loaded', event.target)
-})
-
-pdfquery(page).trigger('change', { field: 'rotation', value: 90 })
-pdfquery(annotation).trigger('annotation', { x: 148, y: 320, text: 'check total' })
-pdfquery(doc).trigger('verify', { score: 0.98, reasons: ['totals match'] })
-pdfquery(doc).trigger('load')
+Effect.runPromise(program)
 ```
 
 pdfquery is a minimal, tree-agnostic, jQuery-style wrapper for object-shaped PDF nodes. It does not parse PDFs, construct trees, or implement CSS selectors. You bring your own nodes; pdfquery gives you a small collection wrapper and a WeakMap-backed event plane over those nodes.
@@ -217,11 +227,12 @@ The mental model: facets push events via `.trigger()`, consumers subscribe via `
 npm install pdfquery
 ```
 
-ESM only. The wrapper itself remains environment-neutral; the CLI requires Node >=20.16. The npm package has no runtime dependencies.
+ESM only. The wrapper itself remains environment-neutral; the CLI requires Node >=20.16. The npm package has one runtime dependency: `effect` (v4 RC).
 
 ### Typed Events
 
 ```ts
+import { Effect } from 'effect'
 import pdfquery from 'pdfquery'
 
 type PdfEvents = {
@@ -231,15 +242,18 @@ type PdfEvents = {
 }
 
 const nodes = [{ id: 'page-1' }]
-const $ = pdfquery<{ id: string }, PdfEvents>(nodes)
 
-$.on('verify', (event) => {
-  event.detail.score
-  event.target.id
+const program = Effect.gen(function*() {
+  const $ = yield* pdfquery<{ id: string }, PdfEvents>(nodes)
+
+  yield* $.on('verify', (event) => {
+    event.detail.score
+    event.target.id
+  })
+
+  yield* $.trigger('verify', { score: 0.91, reasons: ['signature present'] })
+  yield* $.trigger('load', undefined)
 })
-
-$.trigger('verify', { score: 0.91, reasons: ['signature present'] })
-$.trigger('load', undefined)
 ```
 
 Unknown event names are still allowed and use `unknown` detail, which keeps pdfquery open to event names created by plugins, parser facets, and application code.
@@ -248,19 +262,19 @@ Unknown event names are still allowed and use `unknown` detail, which keeps pdfq
 
 | API | Description |
 | --- | --- |
-| `pdfquery(node)` | Wrap one object-shaped node. |
-| `pdfquery(nodes)` | Wrap an array or iterable of object-shaped nodes. |
-| `pdfquery(wrapper)` | Return an existing pdfquery collection. |
-| `.on(type, handler)` | Subscribe handlers on each node in the collection. |
-| `.off(type?, handler?)` | Remove one handler, all handlers for a type, or all handlers. |
-| `.one(type, handler)` | Subscribe a handler that removes itself after one call. |
-| `.trigger(type, detail?)` | Synchronously emit an event for each unique node in the collection. |
-| `.each(fn)` | Iterate nodes and return the collection. |
-| `.map(fn)` | Return a native array of mapped values. |
-| `.filter(fn)` | Return a new collection of matching nodes. |
-| `.first()` | Return a collection containing the first node, if present. |
-| `.last()` | Return a collection containing the last node, if present. |
-| `.eq(i)` | Return a collection containing the node at index `i`, if present. |
+| `pdfquery(node)` | `Effect` wrapping one object-shaped node; fails with `PdfQueryInputError` for primitives, strings, and functions. |
+| `pdfquery(nodes)` | `Effect` wrapping an array or iterable of object-shaped nodes. |
+| `pdfquery(wrapper)` | `Effect` returning an existing pdfquery collection. |
+| `.on(type, handler)` | `Effect` subscribing handlers on each node, yielding the collection. |
+| `.off(type?, handler?)` | `Effect` removing one handler, all handlers for a type, or all handlers, yielding the collection. |
+| `.one(type, handler)` | `Effect` subscribing a handler that removes itself after one call, yielding the collection. |
+| `.trigger(type, detail?)` | `Effect<void, TriggerError>` emitting an event for each unique node in the collection. |
+| `.each(fn)` | `Effect` iterating nodes, yielding the collection. |
+| `.map(fn)` | Return a native array of mapped values (synchronous). |
+| `.filter(fn)` | Return a new collection of matching nodes (synchronous). |
+| `.first()` | Return a collection containing the first node, if present (synchronous). |
+| `.last()` | Return a collection containing the last node, if present (synchronous). |
+| `.eq(i)` | Return a collection containing the node at index `i`, if present (synchronous). |
 | `.length` | Number of nodes in the collection. |
 | `[index]` | Indexed access to nodes. |
 | `[Symbol.iterator]` | Use `for...of`, spread, or `Array.from`. |
@@ -273,7 +287,7 @@ If an event handler throws, pdfquery continues invoking the remaining handlers. 
 { source: 'handler', type, error }
 ```
 
-If no `error` listener is registered anywhere in the triggering collection, the original error is rethrown synchronously.
+If no `error` listener is registered anywhere in the triggering collection, the `trigger` effect fails with a `TriggerError` whose `cause` is the original thrown value.
 
 ### What the wrapper does not do
 
@@ -291,7 +305,7 @@ Reproducible before/after performance measurements live in [`benchmarks/`](./ben
 
 ## Wrapper roadmap
 
-- Keep the wrapper/event core small and dependency-free.
+- Keep the wrapper/event core small, with `effect` as its only runtime dependency.
 - Stabilize interop with `@okrapdf/doc-parser`.
 - Document common PDF event vocabularies for parser facets, verification facets, annotation facets, and UI layers.
 - Consider optional companion packages for selectors or traversal without adding them to core.

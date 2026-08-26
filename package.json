@@ -10,10 +10,24 @@
     "pdfquery": "./dist/cli.js"
   },
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist", "fixtures", "install.sh", "README.md", "LICENSE", "THIRD_PARTY_NOTICES", "CHANGELOG.md", "divergence.md"],
-  "engines": { "node": ">=20.16.0 || >=22.3.0" },
+  "files": [
+    "dist",
+    "fixtures",
+    "install.sh",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES",
+    "CHANGELOG.md",
+    "divergence.md"
+  ],
+  "engines": {
+    "node": ">=20.16.0 || >=22.3.0"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -23,15 +37,23 @@
   "bugs": {
     "url": "https://github.com/okrapdf/pdfquery/issues"
   },
-  "keywords": ["pdf", "query", "cli", "tagged-pdf", "accessibility", "structtree"],
-  "dependencies": {},
-  "peerDependencies": {},
+  "keywords": [
+    "pdf",
+    "query",
+    "cli",
+    "tagged-pdf",
+    "accessibility",
+    "structtree"
+  ],
+  "dependencies": {
+    "effect": "^4.0.0-rc.112"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "npm run build:native --silent && vitest run",
     "test:contract": "npm run build:native --silent && vitest run src/__tests__/cli-json-contract.test.ts",
     "build:native": "node scripts/build-native.mjs",
-    "build": "tsup && npm run build:native",
+    "build": "tsup && tsc -p tsconfig.build.json --emitDeclarationOnly && npm run build:native",
     "benchmark": "node --expose-gc benchmarks/run.mjs --quick",
     "benchmark:full": "node --expose-gc benchmarks/run.mjs",
     "benchmark:prepare": "node benchmarks/prepare-baseline.mjs",
@@ -43,9 +65,9 @@
     "size": "gzip -c dist/index.js | wc -c"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
-    "vitest": "^2.1.0",
+    "@types/node": "^20.0.0",
     "tsup": "^8.3.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
   }
 }
